@@ -431,9 +431,10 @@ void MythicPlus::LoadMythicPlusSnapshotsFromDB()
             "max(mpds.combattime) combattime, "
             "max(mythiclevel) mythiclevel, "
             "max(creature_final_boss) creature_final_boss, "
-            "max(rewarded) rewarded "
+            "max(rewarded) rewarded, "
+            "mpds.mapdifficulty "
         "from mythic_plus_dungeon_snapshot mpds "
-        "group by mpds.id, mpds.map, mpds.starttime, mpds.snaptime, mpds.creature_entry";
+        "group by mpds.id, mpds.map, mpds.mapdifficulty, mpds.starttime, mpds.snaptime, mpds.creature_entry";
     _queryProcessor.AddCallback(CharacterDatabase.AsyncQuery(query).WithCallback(std::bind(&MythicPlus::MythicPlusSnapshotsDBCallback, this, std::placeholders::_1)));
 }
 
@@ -684,6 +685,7 @@ void MythicPlus::MythicPlusSnapshotsDBCallback(QueryResult result)
         snapshot.mythicLevel = fields[7].Get<uint32>();
         snapshot.finalBoss = fields[8].Get<bool>();
         snapshot.rewarded = fields[9].Get<bool>();
+        snapshot.difficulty = fields[10].Get<bool>();
         mapSnapshots[snapshot.mapId][std::make_pair(snapshot.id, snapshot.startTime)].push_back(snapshot);
     } while (result->NextRow());
 

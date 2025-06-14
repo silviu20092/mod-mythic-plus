@@ -91,6 +91,7 @@ public:
         uint32 totalTime;
         uint32 internalId;
         uint32 endTime;
+        uint32 difficulty;
     };
 
     class Utils

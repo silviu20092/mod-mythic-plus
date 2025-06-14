@@ -325,6 +325,10 @@ void MythicPlusNpcSupport::AddMythicPlusSnapshotAllRuns(Player* player, Creature
             oss << " [M+ LEVEL ";
             oss << snap.mythicLevel;
             oss << "]";
+            if (snap.difficulty == DUNGEON_DIFFICULTY_NORMAL)
+                oss << " [NORMAL]";
+            else
+                oss << MythicPlus::Utils::Colored(" [HEROIC]", "9e1849");
             idnt->uiName = oss.str();
             pagedData.data.push_back(idnt);
         }
