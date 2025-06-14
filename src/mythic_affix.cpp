@@ -67,6 +67,9 @@ void MultipleEnemiesAffix::HandleStaticEffect(Creature* creature)
     if (!IsCreatureProcessed(creature))
         return;
 
+    if (sMythicPlus->IsCreatureIgnoredForMultiplyAffix(creature->GetEntry()))
+        return;
+
     if (creature->IsDungeonBoss() || sMythicPlus->IsFinalBoss(creature->GetEntry()))
         return;
 

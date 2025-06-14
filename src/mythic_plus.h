@@ -179,11 +179,13 @@ public:
         return enabled;
     }
     bool MatchMythicPlusMapDiff(const Map* map) const;
+    bool IsCreatureIgnoredForMultiplyAffix(uint32 entry) const;
 private:
     std::unordered_map<uint32, Difficulty> mythicPlusDungeons;
     std::unordered_map<uint32, MythicPlusDungeonInfo> mythicPlusDungeonInfo;
     std::unordered_map<uint32, uint32> charMythicLevels;
     bool enabled;
+    std::set<uint32> ignoredEntriesForMultiplyAffix;
 
     MythicLevelContainer mythicLevels;
 
@@ -198,6 +200,7 @@ private:
     void CreateMythicLevels();
     void LoadMythicPlusDungeonsFromDB();
     void LoadMythicPlusCharLevelsFromDB();
+    void LoadIgnoredEntriesForMultiplyAffixFromDB();
     void MythicPlusSnapshotsDBCallback(QueryResult result);
     void SortSnapshots(std::vector<std::pair<std::pair<uint32, uint64>, std::vector<MythicPlusDungeonSnapshot>>>& snapshots);
 };

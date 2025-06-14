@@ -237,6 +237,7 @@ void MythicPlus::LoadFromDB()
 
     LoadMythicPlusDungeonsFromDB();
     LoadMythicPlusCharLevelsFromDB();
+    LoadIgnoredEntriesForMultiplyAffixFromDB();
 }
 
 MythicPlus::MythicPlusDungeonInfo* MythicPlus::GetSavedDungeonInfo(uint32 instanceId)
@@ -415,6 +416,23 @@ void MythicPlus::LoadMythicPlusCharLevelsFromDB()
         uint32 mythiclevel = fields[1].Get<uint32>();
 
         charMythicLevels[guid] = mythiclevel;
+    } while (result->NextRow());
+}
+
+void MythicPlus::LoadIgnoredEntriesForMultiplyAffixFromDB()
+{
+    ignoredEntriesForMultiplyAffix.clear();
+
+    QueryResult result = WorldDatabase.Query("SELECT entry FROM mythic_plus_ignore_multiply_affix");
+    if (!result)
+        return;
+
+    do
+    {
+        Field* fields = result->Fetch();
+        uint32 entry = fields[0].Get<uint32>();
+        if (sObjectMgr->GetCreatureTemplate(entry))
+            ignoredEntriesForMultiplyAffix.insert(entry);
     } while (result->NextRow());
 }
 
@@ -784,4 +802,9 @@ bool MythicPlus::MatchMythicPlusMapDiff(const Map* map) const
     }
 
     return false;
+}
+
+bool MythicPlus::IsCreatureIgnoredForMultiplyAffix(uint32 entry) const
+{
+    return ignoredEntriesForMultiplyAffix.find(entry) != ignoredEntriesForMultiplyAffix.end();
 }
