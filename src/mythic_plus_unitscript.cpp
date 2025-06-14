@@ -175,6 +175,10 @@ public:
             if (!creature || !sMythicPlus->CanProcessCreature(creature))
                 return;
 
+            // prevent timer start in cases like Drak'Tharon Keep where dungeon mobs kill each other at the start
+            if (killer->ToCreature() != nullptr && !killer->IsControlledByPlayer())
+                return;
+
             Map* map = unit->GetMap();
             MythicPlus::MapData* mapData = sMythicPlus->GetMapData(map, false);
             ASSERT(mapData);

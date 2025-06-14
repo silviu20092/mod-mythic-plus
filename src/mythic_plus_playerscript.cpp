@@ -25,8 +25,6 @@ public:
         {
             if (enterState == MythicPlus::MythicPlusDungeonEnterState::ENTER_STATE_LEADER_OFFLINE)
                 MythicPlus::BroadcastToPlayer(player, "Group's leader must be online in order to join Mythic Plus --> (as you are in a group and the leader has a Mythic Plus level set this check is performed even if instance save data might be different)");
-            else if (enterState == MythicPlus::MythicPlusDungeonEnterState::ENTER_STATE_INVALID_DIFFICULTY)
-                MythicPlus::BroadcastToPlayer(player, "You need heroic difficulty for this dungeon in order to join Mythic Plus --> (as you are in a group and the leader has a Mythic Plus level set this check is performed even if instance save data might be different)");
 
             return false;
         }

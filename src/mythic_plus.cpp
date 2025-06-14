@@ -167,20 +167,20 @@ MythicPlus::MythicPlusDungeonEnterState MythicPlus::CanEnterDungeonFromEntry(con
     if (leaderGuid.IsEmpty())
         return ENTER_STATE_OK;
 
+    // first, check if the map can actually start a M+ dungeon
+    Difficulty playerDiff = player->GetDifficulty(false);
+    Difficulty dungeonDiff = mythicPlusDungeons.at(mapEntry->MapID);
+    if (playerDiff < dungeonDiff)
+        return ENTER_STATE_OK;
+
     uint32 leaderMythicLevel = GetCurrentMythicPlusLevelForGUID(leaderGuid.GetCounter());
     if (leaderMythicLevel == 0)
         return ENTER_STATE_OK;
 
-    // if the group's leader has a mythic level set, then the leader must be online to retrieve the difficulty
+    // let's just wait for the leader to come online
     Player* leader = ObjectAccessor::FindConnectedPlayer(leaderGuid);
     if (!leader)
         return ENTER_STATE_LEADER_OFFLINE;
-
-    // most dungeons can only be joined as M+ in heroic difficulty
-    Difficulty leaderDiff = leader->GetDifficulty(false);
-    Difficulty dungeonDiff = mythicPlusDungeons.at(mapEntry->MapID);
-    if (leaderDiff < dungeonDiff)
-        return ENTER_STATE_INVALID_DIFFICULTY;
 
     return ENTER_STATE_OK;
 }
