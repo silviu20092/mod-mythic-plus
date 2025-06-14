@@ -1,0 +1,17 @@
+#
+# Credits: silviu20092
+#
+
+[worldserver]
+
+########################################
+# Mythic Plus configuration
+########################################
+#
+#    MythicPlus.Enable
+#        Description: Enable or disable the system. This config is not hot-reloadable.
+#        Default:     0 - Disabled
+#                     1 - Enabled
+#
+
+MythicPlus.Enable = 1
