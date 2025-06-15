@@ -4,6 +4,7 @@
 
 #include "ScriptMgr.h"
 #include "GameTime.h"
+#include "mythic_affix.h"
 #include "mythic_plus.h"
 
 class mythic_plus_all_mapscript : public AllMapScript
@@ -149,6 +150,7 @@ public:
         if (sMythicPlus->IsMapInMythicPlus(map))
         {
             MythicPlus::MapData* mapData = sMythicPlus->GetMapData(map, false);
+            ASSERT(mapData);
             if (mapData->mythicPlusStartTimer > 0 && mapData->receiveLoot)
             {
                 const MythicLevel* level = mapData->mythicLevel;
@@ -160,6 +162,9 @@ public:
 
                 mapData->updateTimer += diff;
             }
+
+            for (auto* affix : mapData->mythicLevel->affixes)
+                affix->HandlePeriodicEffectMap(map, diff);
         }
     }
 

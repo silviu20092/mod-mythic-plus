@@ -9,6 +9,7 @@ void AddSC_mythic_plus_worldscript();
 void AddSC_mythic_plus_unitscript();
 void AddSC_mod_mythic_plus_npc();
 void AddSC_mythic_plus_groupscript();
+void AddSC_npc_lightning_sphere();
 
 void Addmod_mythic_plusScripts()
 {
@@ -19,4 +20,5 @@ void Addmod_mythic_plusScripts()
     AddSC_mythic_plus_unitscript();
     AddSC_mod_mythic_plus_npc();
     AddSC_mythic_plus_groupscript();
+    AddSC_npc_lightning_sphere();
 }

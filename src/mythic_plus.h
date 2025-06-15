@@ -120,6 +120,7 @@ public:
         uint32 level;
         uint16 affixType;
         float val1;
+        float val2;
     };
 
     struct DBReward
@@ -137,6 +138,8 @@ public:
     };
 public:
     static MythicPlus* instance();
+
+    static constexpr uint32 NPC_LIGHTNING_SPHERE = 200006;
 
     MapData* GetMapData(Map* map, bool withDefault = true) const;
     CreatureData* GetCreatureData(Creature* creature, bool withDefault = true) const;

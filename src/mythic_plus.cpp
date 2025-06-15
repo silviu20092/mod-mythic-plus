@@ -111,6 +111,9 @@ bool MythicPlus::CanProcessCreature(const Creature* creature) const
     if (!creature)
         return false;
 
+    if (creature->GetEntry() == NPC_LIGHTNING_SPHERE)
+        return false;
+
     Map* map = creature->GetMap();
     if (!map || !map->IsNonRaidDungeon() || !map->ToInstanceMap())
         return false;
@@ -413,7 +416,7 @@ void MythicPlus::LoadMythicAffixFromDB()
 {
     affixesFromDB.clear();
 
-    QueryResult result = WorldDatabase.Query("SELECT lvl, affixtype, val1 FROM mythic_plus_affix");
+    QueryResult result = WorldDatabase.Query("SELECT lvl, affixtype, val1, val2 FROM mythic_plus_affix");
     if (!result)
         return;
 
@@ -428,7 +431,8 @@ void MythicPlus::LoadMythicAffixFromDB()
             continue;
         }
         float val1 = fields[2].Get<float>();
-        affixesFromDB[lvl].push_back({lvl, affixType, val1});
+        float val2 = fields[3].Get<float>();
+        affixesFromDB[lvl].push_back({lvl, affixType, val1, val2});
     } while (result->NextRow());
 }
 
@@ -491,7 +495,7 @@ void MythicPlus::LoadMythicLevelsFromDB()
             const std::vector<DBAffix>& affixes = affixesFromDB.at(lvl);
             for (const auto& a : affixes)
             {
-                MythicAffix* affix = MythicAffix::AffixFactory((MythicAffixType)a.affixType, a.val1);
+                MythicAffix* affix = MythicAffix::AffixFactory((MythicAffixType)a.affixType, a.val1, a.val2);
                 if (affix != nullptr)
                     level.affixes.push_back(affix);
             }

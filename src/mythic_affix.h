@@ -16,6 +16,7 @@ enum MythicAffixType
     AFFIX_TYPE_MULTIPLE_ENEMIES,
     AFFIX_TYPE_MORE_CREATURE_DAMAGE,
     AFFIX_TYPE_RANDOMLY_EXPLODE,
+    AFFIX_TYPE_LIGHTNING_SPHERE,
     MAX_AFFIX_TYPE
 };
 
@@ -28,8 +29,9 @@ public:
     virtual void HandleStaticEffect(Creature* creature) {}
     virtual void HandleOnDamageEffect(Unit* attacker, Unit* victim, uint32& damage) {}
     virtual void HandlePeriodicEffect(Unit* unit, uint32 diff) {}
+    virtual void HandlePeriodicEffectMap(Map* map, uint32 diff) {}
 
-    static MythicAffix* AffixFactory(MythicAffixType type, float val);
+    static MythicAffix* AffixFactory(MythicAffixType type, float val1, float val2);
 protected:
     static bool IsCreatureProcessed(Creature* creature);
 };
@@ -147,6 +149,24 @@ public:
     }
 
     void HandlePeriodicEffect(Unit* unit, uint32 diff) override;
+    std::string ToString() const override;
+};
+
+class LightningSphereAffix : public MythicAffix
+{
+private:
+    uint32 spawnTimer = 0;
+    uint32 spawnTimerEnd = 0;
+    float chanceOfSpawn = 0;
+public:
+    LightningSphereAffix(uint32 spawnTimerEnd, float chanceOfSpawn) : spawnTimerEnd(spawnTimerEnd), chanceOfSpawn(chanceOfSpawn) {}
+
+    MythicAffixType GetAffixType() const override
+    {
+        return AFFIX_TYPE_LIGHTNING_SPHERE;
+    }
+
+    void HandlePeriodicEffectMap(Map* map, uint32 diff) override;
     std::string ToString() const override;
 };
 

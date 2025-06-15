@@ -15,22 +15,24 @@
     return creatureData->processed;
 }
 
-/*static*/ MythicAffix* MythicAffix::AffixFactory(MythicAffixType type, float val)
+/*static*/ MythicAffix* MythicAffix::AffixFactory(MythicAffixType type, float val1, float val2)
 {
     switch (type)
     {
         case AFFIX_TYPE_HEALTH_INCREASE:
-            return new HealthIncreaseAffix(val);
+            return new HealthIncreaseAffix(val1);
         case AFFIX_TYPE_HEALTH_INCREASE_TRASH:
-            return new TrashHealthIncreaseAffix(val);
+            return new TrashHealthIncreaseAffix(val1);
         case AFFIX_TYPE_HEALTH_INCREASE_BOSSES:
-            return new BossHealthIncreaseAffix(val);
+            return new BossHealthIncreaseAffix(val1);
         case AFFIX_TYPE_MULTIPLE_ENEMIES:
-            return new MultipleEnemiesAffix(val);
+            return new MultipleEnemiesAffix(val1);
         case AFFIX_TYPE_MORE_CREATURE_DAMAGE:
-            return new MoreDamageForCreaturesAffix(val);
+            return new MoreDamageForCreaturesAffix(val1);
         case AFFIX_TYPE_RANDOMLY_EXPLODE:
             return new RandomlyExplodeAffix();
+        case AFFIX_TYPE_LIGHTNING_SPHERE:
+            return new LightningSphereAffix((uint32)val1, val2);
         default:
             return nullptr;
     }
@@ -169,7 +171,10 @@ void RandomlyExplodeAffix::HandlePeriodicEffect(Unit* unit, uint32 diff)
     {
         timer = 0;
 
-        if (roll_chance_i(40))
+        MythicPlus::MapData* mapData = sMythicPlus->GetMapData(player->GetMap(), false);
+        ASSERT(mapData);
+
+        if (roll_chance_i(40) && mapData->mythicPlusStartTimer > 0 && !mapData->done)
         {
             player->CastSpell(player, EXPLOSION_VISUAL, true);
             uint32 damage = (uint32)(frand(15, 35) / 100 * player->GetMaxHealth());
@@ -181,4 +186,47 @@ void RandomlyExplodeAffix::HandlePeriodicEffect(Unit* unit, uint32 diff)
 std::string RandomlyExplodeAffix::ToString() const
 {
     return "Random explosions deal damage to players";
+}
+
+void LightningSphereAffix::HandlePeriodicEffectMap(Map* map, uint32 diff)
+{
+    if (!sMythicPlus->IsMapInMythicPlus(map))
+        return;
+
+    if (spawnTimer >= spawnTimerEnd)
+    {
+        spawnTimer = 0;
+
+        if (roll_chance_f(chanceOfSpawn))
+        {
+            MythicPlus::MapData* mapData = sMythicPlus->GetMapData(map, false);
+            // don't try to spawn spheres if the timer is not yet started or if the dungeon is finished
+            if (mapData->mythicPlusStartTimer == 0 || mapData->done)
+                return;
+
+            Map::PlayerList const& playerList = map->GetPlayers();
+            if (playerList.IsEmpty())
+                return;
+
+            std::list<Player*> players;
+            for (Map::PlayerList::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
+                if (Player* player = i->GetSource())
+                    players.push_back(player);
+
+            Player* player = Acore::Containers::SelectRandomContainerElement(players);
+            player->SummonCreature(MythicPlus::NPC_LIGHTNING_SPHERE, *player, TEMPSUMMON_TIMED_OR_CORPSE_DESPAWN, 60 * 1000);
+        }
+    }
+    else
+        spawnTimer += diff;
+}
+
+std::string LightningSphereAffix::ToString() const
+{
+    std::ostringstream oss;
+    oss << "Periodically summons lightning spheres that deal huge damage to players if not killed fast [";
+    oss << MythicPlus::Utils::FormatFloat(chanceOfSpawn) << "% chance to spawn every ";
+    oss << secsToTimeString(spawnTimerEnd / 1000);
+    oss << "]";
+    return oss.str();
 }
