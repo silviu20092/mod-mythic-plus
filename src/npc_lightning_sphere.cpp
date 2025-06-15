@@ -19,7 +19,7 @@ public:
     {
     private:
         uint32 castTimer = 0;
-        static constexpr float range = 40.0f;
+        static constexpr float range = 100.0f;
     public:
         npc_lightning_sphereAI(Creature* creature) : ScriptedAI(creature) {}
 
