@@ -114,6 +114,27 @@ public:
         static std::string FormatFloat(float val, uint32 decimals = 2);
         static std::string DateFromSeconds(uint64 seconds);
     };
+
+    struct DBAffix
+    {
+        uint32 level;
+        uint16 affixType;
+        float val1;
+    };
+
+    struct DBReward
+    {
+        enum RewardType
+        {
+            REWARD_COPPER,
+            REWARD_TOKEN,
+            MAX_REWARD_TYPE
+        };
+        uint32 level;
+        RewardType type;    // 0 - copper (money), 1 - token (item)
+        uint32 val1;        // for type = 0 - amount of copper, for type = 1 - the item entry
+        uint32 val2;        // for type = 0 - nothing, for type = 1 - item count
+    };
 public:
     static MythicPlus* instance();
 
@@ -194,15 +215,20 @@ private:
 
     std::unordered_map<uint32, std::vector<std::pair<std::pair<uint32, uint64>, std::vector<MythicPlusDungeonSnapshot>>>> dungeonMapSnapshots;
 
+    std::unordered_map<uint32, std::vector<DBAffix>> affixesFromDB;
+    std::unordered_map<uint32, std::vector<DBReward>> rewardsFromDB;
+
     void CreateMythicPlusDungeons();
     bool IsAllowedMythicPlusDungeon(uint32 mapId) const;
     ObjectGuid GetLeaderGuid(const Player* player) const;
-    void CreateMythicLevels();
     void LoadMythicPlusDungeonsFromDB();
     void LoadMythicPlusCharLevelsFromDB();
     void LoadIgnoredEntriesForMultiplyAffixFromDB();
     void MythicPlusSnapshotsDBCallback(QueryResult result);
     void SortSnapshots(std::vector<std::pair<std::pair<uint32, uint64>, std::vector<MythicPlusDungeonSnapshot>>>& snapshots);
+    void LoadMythicAffixFromDB();
+    void LoadMythicRewardsFromDB();
+    void LoadMythicLevelsFromDB();
 };
 
 #define sMythicPlus MythicPlus::instance()

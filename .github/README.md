@@ -29,7 +29,6 @@ Timer countdown starts as soon as a **creature inside the dungeon** is killed. U
 
 The system features complex tracking of players that complete M+ dungeons. Each boss kill is saved (with info like total combat time). Players can then check M+ standings for each dungeon and check top timers for example.
 
-
 ### Dungeons that can become Mythic Plus
 
 1. Pit of Saron (normal/HC)
@@ -44,6 +43,13 @@ The system features complex tracking of players that complete M+ dungeons. Each 
 10. The Oculus (HC)
 11. Utgarde Keep (HC)
 12. Utgarde Pinnacle (HC)
+
+### Adding new Mythic Plus levels
+
+You can easily add or customize levels (currently only 5 were added).
+To add a new level, simply insert a line into **mythic_plus_level** (world database). The fields should be self-explanatory, **timelimit** is expressed in seconds and represents dungeon's time limit (players will try to beat this timer to get loot).
+Now you can add the rewards, simply insert lines in **mythic_plus_level_rewards**. mythic_plus_level_rewards.lvl links this table with **mythic_plus_level** table. **rewardtype** can either be 0 (in which case **val1** represents the amount of money (copper) that players will get) or 1 (**val1** now is the item entry and **val2** is the amount of items)
+To add affixes to a M+ level, insert lines in **mythic_plus_affix**. For **affixtype**, see **enum MythicAffixType** from mythic_affix.h. For **val1**, this represents the specific value for each affix (for example, in case of **AFFIX_TYPE_MORE_CREATURE_DAMAGE** this represents the damage increase percent)
 
 ## Some photos
 

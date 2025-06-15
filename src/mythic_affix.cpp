@@ -15,6 +15,27 @@
     return creatureData->processed;
 }
 
+/*static*/ MythicAffix* MythicAffix::AffixFactory(MythicAffixType type, float val)
+{
+    switch (type)
+    {
+        case AFFIX_TYPE_HEALTH_INCREASE:
+            return new HealthIncreaseAffix(val);
+        case AFFIX_TYPE_HEALTH_INCREASE_TRASH:
+            return new TrashHealthIncreaseAffix(val);
+        case AFFIX_TYPE_HEALTH_INCREASE_BOSSES:
+            return new BossHealthIncreaseAffix(val);
+        case AFFIX_TYPE_MULTIPLE_ENEMIES:
+            return new MultipleEnemiesAffix(val);
+        case AFFIX_TYPE_MORE_CREATURE_DAMAGE:
+            return new MoreDamageForCreaturesAffix(val);
+        case AFFIX_TYPE_RANDOMLY_EXPLODE:
+            return new RandomlyExplodeAffix();
+        default:
+            return nullptr;
+    }
+}
+
 bool HealthIncreaseAffix::CanApplyHealthIncrease(Creature* creature) const
 {
     if (!IsCreatureProcessed(creature))

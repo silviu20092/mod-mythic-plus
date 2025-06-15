@@ -13,7 +13,6 @@ MythicPlus::MythicPlus()
 {
     enabled = true;
     CreateMythicPlusDungeons();
-    CreateMythicLevels();
 }
 
 MythicPlus::~MythicPlus()
@@ -235,9 +234,18 @@ void MythicPlus::LoadFromDB()
     trans->Append("DELETE FROM `mythic_plus_char_level` WHERE `guid` NOT IN (SELECT `guid` FROM `characters`)");
     CharacterDatabase.DirectCommitTransaction(trans);
 
+    WorldDatabaseTransaction wtrans = WorldDatabase.BeginTransaction();
+    wtrans->Append("DELETE FROM mythic_plus_level_rewards rw WHERE NOT EXISTS (SELECT 1 FROM mythic_plus_level l where l.lvl = rw.lvl)");
+    wtrans->Append("DELETE FROM mythic_plus_affix a WHERE NOT EXISTS (SELECT 1 FROM mythic_plus_level l where l.lvl = a.lvl)");
+    WorldDatabase.DirectCommitTransaction(wtrans);
+
     LoadMythicPlusDungeonsFromDB();
     LoadMythicPlusCharLevelsFromDB();
     LoadIgnoredEntriesForMultiplyAffixFromDB();
+
+    LoadMythicAffixFromDB();
+    LoadMythicRewardsFromDB();
+    LoadMythicLevelsFromDB();
 }
 
 MythicPlus::MythicPlusDungeonInfo* MythicPlus::GetSavedDungeonInfo(uint32 instanceId)
@@ -312,61 +320,6 @@ ObjectGuid MythicPlus::GetLeaderGuid(const Player* player) const
         return ObjectGuid::Empty;
 
     return group->GetLeaderGUID();
-}
-
-void MythicPlus::CreateMythicLevels()
-{
-    MythicLevel level1;
-    level1.level = 1;
-    level1.affixes.push_back(new TrashHealthIncreaseAffix(0.15f));
-    level1.timeLimit = 60 * 45;
-    level1.reward.money = 1000000;
-    level1.reward.AddToken(29434, 1);
-    mythicLevels.push_back(level1);
-
-    MythicLevel level2;
-    level2.level = 2;
-    level2.affixes.push_back(new TrashHealthIncreaseAffix(0.15f));
-    level2.affixes.push_back(new BossHealthIncreaseAffix(0.1f));
-    level2.affixes.push_back(new MoreDamageForCreaturesAffix(10.0f));
-    level2.timeLimit = 60 * 45;
-    level2.reward.money = 4000000;
-    level2.reward.AddToken(29434, 2);
-    mythicLevels.push_back(level2);
-
-    MythicLevel level3;
-    level3.level = 3;
-    level3.affixes.push_back(new TrashHealthIncreaseAffix(0.2f));
-    level3.affixes.push_back(new BossHealthIncreaseAffix(0.15f));
-    level3.affixes.push_back(new MultipleEnemiesAffix(15.0f));
-    level3.affixes.push_back(new MoreDamageForCreaturesAffix(20.0f));
-    level3.timeLimit = 60 * 40;
-    level3.reward.money = 8000000;
-    level3.reward.AddToken(29434, 4);
-    mythicLevels.push_back(level3);
-
-    MythicLevel level4;
-    level4.level = 4;
-    level4.affixes.push_back(new TrashHealthIncreaseAffix(0.2f));
-    level4.affixes.push_back(new BossHealthIncreaseAffix(0.15f));
-    level4.affixes.push_back(new MultipleEnemiesAffix(30.0f));
-    level4.affixes.push_back(new MoreDamageForCreaturesAffix(30.0f));
-    level4.timeLimit = 60 * 40;
-    level4.reward.money = 10000000;
-    level4.reward.AddToken(29434, 7);
-    mythicLevels.push_back(level4);
-
-    MythicLevel level5;
-    level5.level = 5;
-    level5.affixes.push_back(new TrashHealthIncreaseAffix(0.2f));
-    level5.affixes.push_back(new BossHealthIncreaseAffix(0.15f));
-    level5.affixes.push_back(new MultipleEnemiesAffix(30.0f));
-    level5.affixes.push_back(new MoreDamageForCreaturesAffix(30.0f));
-    level5.affixes.push_back(new RandomlyExplodeAffix());
-    level5.timeLimit = 60 * 40;
-    level5.reward.money = 15000000;
-    level5.reward.AddToken(29434, 10);
-    mythicLevels.push_back(level5);
 }
 
 void MythicPlus::LoadMythicPlusDungeonsFromDB()
@@ -454,6 +407,98 @@ void MythicPlus::LoadMythicPlusSnapshotsFromDB()
         "from mythic_plus_dungeon_snapshot mpds "
         "group by mpds.id, mpds.map, mpds.mapdifficulty, mpds.starttime, mpds.snaptime, mpds.creature_entry";
     _queryProcessor.AddCallback(CharacterDatabase.AsyncQuery(query).WithCallback(std::bind(&MythicPlus::MythicPlusSnapshotsDBCallback, this, std::placeholders::_1)));
+}
+
+void MythicPlus::LoadMythicAffixFromDB()
+{
+    affixesFromDB.clear();
+
+    QueryResult result = WorldDatabase.Query("SELECT lvl, affixtype, val1 FROM mythic_plus_affix");
+    if (!result)
+        return;
+
+    do
+    {
+        Field* fields = result->Fetch();
+        uint32 lvl = fields[0].Get<uint32>();
+        uint16 affixType = fields[1].Get<uint16>();
+        if (affixType >= MAX_AFFIX_TYPE)
+        {
+            LOG_ERROR("sql.sql", "Table `mythic_plus_affix` has invalid affix type '{}', ignoring", affixType);
+            continue;
+        }
+        float val1 = fields[2].Get<float>();
+        affixesFromDB[lvl].push_back({lvl, affixType, val1});
+    } while (result->NextRow());
+}
+
+void MythicPlus::LoadMythicRewardsFromDB()
+{
+    rewardsFromDB.clear();
+
+    QueryResult result = WorldDatabase.Query("SELECT lvl, rewardtype, val1, val2 FROM mythic_plus_level_rewards");
+    if (!result)
+        return;
+
+    do
+    {
+        Field* fields = result->Fetch();
+        uint32 lvl = fields[0].Get<uint32>();
+        uint16 rewardType = fields[1].Get<uint16>();
+        if (rewardType >= DBReward::MAX_REWARD_TYPE)
+        {
+            LOG_ERROR("sql.sql", "Table `mythic_plus_level_rewards` has invalid rewardtype '{}', ignoring", rewardType);
+            continue;
+        }
+        uint32 val1 = fields[2].Get<uint32>();
+        uint32 val2 = fields[3].Get<uint32>();
+        rewardsFromDB[lvl].push_back({ lvl, (DBReward::RewardType)rewardType, val1, val2 });
+    } while (result->NextRow());
+}
+
+void MythicPlus::LoadMythicLevelsFromDB()
+{
+    mythicLevels.clear();
+
+    QueryResult result = WorldDatabase.Query("SELECT lvl, timelimit FROM mythic_plus_level order by lvl");
+    if (!result)
+        return;
+
+    do
+    {
+        Field* fields = result->Fetch();
+        uint32 lvl = fields[0].Get<uint32>();
+        uint32 timeLimit = fields[1].Get<uint32>();
+
+        MythicLevel level;
+        level.level = lvl;
+        level.timeLimit = timeLimit;
+
+        if (rewardsFromDB.find(lvl) != rewardsFromDB.end())
+        {
+            const std::vector<DBReward>& rewards = rewardsFromDB.at(lvl);
+            for (const auto& r : rewards)
+            {
+                if (r.type == DBReward::REWARD_COPPER)
+                    level.reward.money += r.val1;
+                else if (r.type == DBReward::REWARD_TOKEN)
+                    level.reward.AddToken(r.val1, r.val2);
+            }
+        }
+
+        if (affixesFromDB.find(lvl) != affixesFromDB.end())
+        {
+            const std::vector<DBAffix>& affixes = affixesFromDB.at(lvl);
+            for (const auto& a : affixes)
+            {
+                MythicAffix* affix = MythicAffix::AffixFactory((MythicAffixType)a.affixType, a.val1);
+                if (affix != nullptr)
+                    level.affixes.push_back(affix);
+            }
+        }
+
+        mythicLevels.push_back(level);
+    } while (result->NextRow());
 }
 
 /*static*/ std::string MythicPlus::Utils::GetCreatureName(const Player* player, const Creature* creature)

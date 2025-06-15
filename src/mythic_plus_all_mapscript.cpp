@@ -49,7 +49,14 @@ public:
             const MythicPlus::MythicPlusDungeonInfo* savedDungeon = sMythicPlus->GetSavedDungeonInfo(instanceId);
             if (savedDungeon == nullptr)
             {
-                mythicLevel = sMythicPlus->GetMythicLevel(sMythicPlus->GetCurrentMythicPlusLevelForDungeon(player));
+                uint32 dungeonMythicLevel = sMythicPlus->GetCurrentMythicPlusLevelForDungeon(player);
+                mythicLevel = sMythicPlus->GetMythicLevel(dungeonMythicLevel);
+                if (dungeonMythicLevel > 0 && mythicLevel == nullptr)
+                {
+                    MythicPlus::BroadcastToPlayer(player, "Trying to enter a Mythic Plus dungeon with a non existant level");
+                    MythicPlus::FallbackTeleport(player);
+                    return;
+                }
                 sMythicPlus->SaveDungeonInfo(instanceId, map->GetId(), 0L, mythicLevel == nullptr ? 0 : mythicLevel->level, false);
 
                 if (mythicLevel == nullptr)
@@ -67,6 +74,14 @@ public:
                 }
 
                 mythicLevel = sMythicPlus->GetMythicLevel(savedDungeon->mythicLevel);
+                if (savedDungeon->mythicLevel > 0 && mythicLevel == nullptr)
+                {
+                    // edge case where a dungeon was saved as M+ but now the level does not longer exist (removed from DB)
+                    MythicPlus::BroadcastToPlayer(player, "This dungeon was saved as Mythic Plus but now it's level does no longer exist");
+                    MythicPlus::FallbackTeleport(player);
+                    return;
+                }
+
                 mapData->mythicPlusStartTimer = savedDungeon->startTime;
                 mapData->done = savedDungeon->done;
             }

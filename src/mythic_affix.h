@@ -28,6 +28,8 @@ public:
     virtual void HandleStaticEffect(Creature* creature) {}
     virtual void HandleOnDamageEffect(Unit* attacker, Unit* victim, uint32& damage) {}
     virtual void HandlePeriodicEffect(Unit* unit, uint32 diff) {}
+
+    static MythicAffix* AffixFactory(MythicAffixType type, float val);
 protected:
     static bool IsCreatureProcessed(Creature* creature);
 };
