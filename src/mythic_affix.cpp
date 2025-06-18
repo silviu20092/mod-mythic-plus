@@ -211,10 +211,14 @@ void LightningSphereAffix::HandlePeriodicEffectMap(Map* map, uint32 diff)
             std::list<Player*> players;
             for (Map::PlayerList::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
                 if (Player* player = i->GetSource())
-                    players.push_back(player);
+                    if (!player->isDead())
+                        players.push_back(player);
 
-            Player* player = Acore::Containers::SelectRandomContainerElement(players);
-            player->SummonCreature(MythicPlus::NPC_LIGHTNING_SPHERE, *player, TEMPSUMMON_TIMED_OR_CORPSE_DESPAWN, 60 * 1000);
+            if (!players.empty())
+            {
+                Player* player = Acore::Containers::SelectRandomContainerElement(players);
+                player->SummonCreature(MythicPlus::NPC_LIGHTNING_SPHERE, *player, TEMPSUMMON_TIMED_OR_CORPSE_DESPAWN, 60 * 1000);
+            }
         }
     }
     else
