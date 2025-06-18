@@ -8,6 +8,7 @@
 #include "Config.h"
 #include "mythic_affix.h"
 #include "mythic_plus.h"
+#include <iomanip>
 
 MythicPlus::MythicPlus()
 {
