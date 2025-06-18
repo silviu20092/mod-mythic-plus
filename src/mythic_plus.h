@@ -41,7 +41,7 @@ public:
 
         const MythicLevel* mythicLevel = nullptr;
         long long mythicPlusStartTimer = 0;
-        uint32 updateTimer = 0;
+        uint64 updateTimer = 0;
         bool receiveLoot = true;
         bool done = false;
     };

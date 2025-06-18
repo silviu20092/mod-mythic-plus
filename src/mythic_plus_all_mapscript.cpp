@@ -122,6 +122,7 @@ public:
                     if (!mapData->done)
                     {
                         long long diff = GameTime::GetGameTime().count() - mapData->mythicPlusStartTimer;
+                        mapData->updateTimer = diff * 1000;
                         if (diff <= mapData->mythicLevel->timeLimit)
                         {
                             oss << "Mythic Plus dungeon is in progress. Current timer: ";
@@ -151,7 +152,7 @@ public:
         {
             MythicPlus::MapData* mapData = sMythicPlus->GetMapData(map, false);
             ASSERT(mapData);
-            if (mapData->mythicPlusStartTimer > 0 && mapData->receiveLoot)
+            if (mapData->mythicPlusStartTimer > 0 && mapData->receiveLoot && !mapData->done)
             {
                 const MythicLevel* level = mapData->mythicLevel;
                 if (mapData->updateTimer / 1000 > level->timeLimit)
