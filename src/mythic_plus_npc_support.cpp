@@ -302,12 +302,11 @@ void MythicPlusNpcSupport::AddMythicPlusSnapshotAllRuns(Player* player, Creature
             idnt->id = internalId + 10;
             std::ostringstream oss;
             oss << internalId << ". ";
-            const MythicLevel* mlevel = sMythicPlus->GetMythicLevel(snap.mythicLevel);
             if (snap.totalTime > 0)
             {
                 oss << secsToTimeString(snap.totalTime);
                 oss << " [LIMIT: ";
-                oss << (mlevel != nullptr ? secsToTimeString(mlevel->timeLimit) : "unknown");
+                oss << secsToTimeString(snap.timelimit);
                 oss << "]";
                 if (snap.rewarded)
                     oss << MythicPlus::Utils::GreenColored(" [REWARDED]");
@@ -318,7 +317,7 @@ void MythicPlusNpcSupport::AddMythicPlusSnapshotAllRuns(Player* player, Creature
             {
                 oss << MythicPlus::Utils::RedColored("NOT FINISHED");
                 oss << " [LIMIT: ";
-                oss << (mlevel != nullptr ? secsToTimeString(mlevel->timeLimit) : "unknown");
+                oss << secsToTimeString(snap.timelimit);
                 oss << "]";
             }
             oss << " [M+ LEVEL ";

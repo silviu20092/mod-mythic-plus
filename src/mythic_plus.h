@@ -44,6 +44,7 @@ public:
         uint64 updateTimer = 0;
         bool receiveLoot = true;
         bool done = false;
+        uint32 timeLimit = 0;
     };
 
     class CreatureData : public DataMap::Base
@@ -70,6 +71,7 @@ public:
     {
         uint32 instanceId;
         uint32 mapId;
+        uint32 timeLimit;
         uint64 startTime;
         uint32 mythicLevel;
         bool done;
@@ -83,6 +85,7 @@ public:
         uint64 startTime;
         uint64 snapTime;
         uint32 combatTime;
+        uint32 timelimit;
         std::string players;
         uint32 mythicLevel;
         uint32 entry;
@@ -163,9 +166,9 @@ public:
     bool IsMapInMythicPlus(Map* map) const;
     void LoadFromDB();
     MythicPlusDungeonInfo* GetSavedDungeonInfo(uint32 instanceId);
-    void SaveDungeonInfo(uint32 instanceId, uint32 mapId, uint64 startTime, uint32 mythicLevel, bool done, bool isMythic = true);
+    void SaveDungeonInfo(uint32 instanceId, uint32 mapId, uint32 timeLimit, uint64 startTime, uint32 mythicLevel, bool done, bool isMythic = true);
     void AddDungeonSnapshot(uint32 instanceId, uint32 mapId, Difficulty mapDiff, uint64 startTime,
-        uint64 snapTime, uint32 combatTime, uint32 charGuid, std::string charName,
+        uint64 snapTime, uint32 combatTime, uint32 timelimit, uint32 charGuid, std::string charName,
         uint32 mythicLevel, uint32 creatureEntry, bool isFinalBoss, bool rewarded);
     bool IsFinalBoss(uint32 entry) const;
     void Reward(Player* player, const MythicReward& reward) const;

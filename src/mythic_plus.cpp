@@ -259,10 +259,10 @@ MythicPlus::MythicPlusDungeonInfo* MythicPlus::GetSavedDungeonInfo(uint32 instan
     return nullptr;
 }
 
-void MythicPlus::SaveDungeonInfo(uint32 instanceId, uint32 mapId, uint64 startTime, uint32 mythicLevel, bool done, bool isMythic)
+void MythicPlus::SaveDungeonInfo(uint32 instanceId, uint32 mapId, uint32 timeLimit, uint64 startTime, uint32 mythicLevel, bool done, bool isMythic)
 {
-    CharacterDatabase.Execute("REPLACE INTO mythic_plus_dungeon (id, map, starttime, mythiclevel, done, ismythic) VALUES ({}, {}, {}, {}, {}, {})",
-        instanceId, mapId, startTime, mythicLevel, done, isMythic);
+    CharacterDatabase.Execute("REPLACE INTO mythic_plus_dungeon (id, map, timelimit, starttime, mythiclevel, done, ismythic) VALUES ({}, {}, {}, {}, {}, {}, {})",
+        instanceId, mapId, timeLimit, startTime, mythicLevel, done, isMythic);
 
     MythicPlusDungeonInfo* dungeonInfo = GetSavedDungeonInfo(instanceId);
     if (dungeonInfo == nullptr)
@@ -271,6 +271,7 @@ void MythicPlus::SaveDungeonInfo(uint32 instanceId, uint32 mapId, uint64 startTi
         dungeonInfo.instanceId = instanceId;
         dungeonInfo.mapId = mapId;
         dungeonInfo.startTime = startTime;
+        dungeonInfo.timeLimit = timeLimit;
         dungeonInfo.mythicLevel = mythicLevel;
         dungeonInfo.done = done;
         dungeonInfo.isMythic = isMythic;
@@ -284,11 +285,11 @@ void MythicPlus::SaveDungeonInfo(uint32 instanceId, uint32 mapId, uint64 startTi
 }
 
 void MythicPlus::AddDungeonSnapshot(uint32 instanceId, uint32 mapId, Difficulty mapDiff, uint64 startTime,
-    uint64 snapTime, uint32 combatTime, uint32 charGuid, std::string charName,
+    uint64 snapTime, uint32 combatTime, uint32 timelimit, uint32 charGuid, std::string charName,
     uint32 mythicLevel, uint32 creatureEntry, bool isFinalBoss, bool rewarded)
 {
-    CharacterDatabase.Execute("INSERT INTO mythic_plus_dungeon_snapshot (id, map, mapdifficulty, starttime, snaptime, combattime, char_guid, char_name, mythiclevel, creature_entry, creature_final_boss, rewarded) VALUES "
-        "({}, {}, {}, {}, {}, {}, {}, \"{}\", {}, {}, {}, {})", instanceId, mapId, mapDiff, startTime, snapTime, combatTime, charGuid, charName, mythicLevel, creatureEntry, isFinalBoss, rewarded);
+    CharacterDatabase.Execute("INSERT INTO mythic_plus_dungeon_snapshot (id, map, mapdifficulty, starttime, snaptime, combattime, timelimit, char_guid, char_name, mythiclevel, creature_entry, creature_final_boss, rewarded) VALUES "
+        "({}, {}, {}, {}, {}, {}, {}, {}, \"{}\", {}, {}, {}, {})", instanceId, mapId, mapDiff, startTime, snapTime, combatTime, timelimit, charGuid, charName, mythicLevel, creatureEntry, isFinalBoss, rewarded);
 }
 
 void MythicPlus::CreateMythicPlusDungeons()
@@ -329,7 +330,7 @@ void MythicPlus::LoadMythicPlusDungeonsFromDB()
 {
     mythicPlusDungeonInfo.clear();
 
-    QueryResult result = CharacterDatabase.Query("SELECT id, map, starttime, mythiclevel, done, ismythic FROM mythic_plus_dungeon");
+    QueryResult result = CharacterDatabase.Query("SELECT id, map, timelimit, starttime, mythiclevel, done, ismythic FROM mythic_plus_dungeon");
     if (!result)
         return;
 
@@ -339,14 +340,16 @@ void MythicPlus::LoadMythicPlusDungeonsFromDB()
 
         uint32 instanceId = fields[0].Get<uint32>();
         uint32 mapId = fields[1].Get<uint32>();
-        uint64 startTime = fields[2].Get<uint64>();
-        uint32 mythicLevel = fields[3].Get<uint32>();
-        bool done = fields[4].Get<bool>();
-        bool isMythic = fields[5].Get<bool>();
+        uint32 timeLimit = fields[2].Get<uint32>();
+        uint64 startTime = fields[3].Get<uint64>();
+        uint32 mythicLevel = fields[4].Get<uint32>();
+        bool done = fields[5].Get<bool>();
+        bool isMythic = fields[6].Get<bool>();
 
         MythicPlusDungeonInfo dungeonInfo;
         dungeonInfo.instanceId = instanceId;
         dungeonInfo.mapId = mapId;
+        dungeonInfo.timeLimit = timeLimit;
         dungeonInfo.startTime = startTime;
         dungeonInfo.mythicLevel = mythicLevel;
         dungeonInfo.done = done;
@@ -406,9 +409,10 @@ void MythicPlus::LoadMythicPlusSnapshotsFromDB()
             "max(mythiclevel) mythiclevel, "
             "max(creature_final_boss) creature_final_boss, "
             "max(rewarded) rewarded, "
-            "mpds.mapdifficulty "
+            "mpds.mapdifficulty, "
+            "mpds.timelimit "
         "from mythic_plus_dungeon_snapshot mpds "
-        "group by mpds.id, mpds.map, mpds.mapdifficulty, mpds.starttime, mpds.snaptime, mpds.creature_entry";
+        "group by mpds.id, mpds.map, mpds.mapdifficulty, mpds.starttime, mpds.timelimit, mpds.snaptime, mpds.creature_entry";
     _queryProcessor.AddCallback(CharacterDatabase.AsyncQuery(query).WithCallback(std::bind(&MythicPlus::MythicPlusSnapshotsDBCallback, this, std::placeholders::_1)));
 }
 
@@ -753,6 +757,7 @@ void MythicPlus::MythicPlusSnapshotsDBCallback(QueryResult result)
         snapshot.finalBoss = fields[8].Get<bool>();
         snapshot.rewarded = fields[9].Get<bool>();
         snapshot.difficulty = fields[10].Get<bool>();
+        snapshot.timelimit = fields[11].Get<uint32>();
         mapSnapshots[snapshot.mapId][std::make_pair(snapshot.id, snapshot.startTime)].push_back(snapshot);
     } while (result->NextRow());
 

@@ -47,7 +47,7 @@ public:
             if (mapData->mythicPlusStartTimer == 0)
             {
                 mapData->mythicPlusStartTimer = gameTime;
-                sMythicPlus->SaveDungeonInfo(map->GetInstanceId(), map->GetId(), mapData->mythicPlusStartTimer, mapData->mythicLevel->level, mapData->done);
+                sMythicPlus->SaveDungeonInfo(map->GetInstanceId(), map->GetId(), mapData->timeLimit, mapData->mythicPlusStartTimer, mapData->mythicLevel->level, mapData->done);
             }
 
             const Map::PlayerList& playerList = map->GetPlayers();
@@ -119,7 +119,7 @@ public:
                         }
                         mapData->done = true;
 
-                        sMythicPlus->SaveDungeonInfo(map->GetInstanceId(), map->GetId(), mapData->mythicPlusStartTimer, mapData->mythicLevel->level, true);
+                        sMythicPlus->SaveDungeonInfo(map->GetInstanceId(), map->GetId(), mapData->timeLimit, mapData->mythicPlusStartTimer, mapData->mythicLevel->level, true);
                     }
 
                     sMythicPlus->AddDungeonSnapshot(map->GetInstanceId(),
@@ -128,6 +128,7 @@ public:
                         savedDungeon->startTime,
                         gameTime,
                         diff,
+                        savedDungeon->timeLimit,
                         player->GetGUID().GetCounter(),
                         player->GetName(),
                         savedDungeon->mythicLevel,
@@ -187,11 +188,11 @@ public:
                 mapData->mythicPlusStartTimer = GameTime::GetGameTime().count();
                 std::ostringstream oss;
                 oss << "Mythic Plus timer started! ";
-                oss << "Beat this timer to get loot: " << secsToTimeString(mapData->mythicLevel->timeLimit) << ". ";
+                oss << "Beat this timer to get loot: " << secsToTimeString(mapData->timeLimit) << ". ";
                 oss << "Have fun!";
                 MythicPlus::AnnounceToMap(map, oss.str());
 
-                sMythicPlus->SaveDungeonInfo(map->GetInstanceId(), map->GetId(), mapData->mythicPlusStartTimer, mapData->mythicLevel->level, mapData->done);
+                sMythicPlus->SaveDungeonInfo(map->GetInstanceId(), map->GetId(), mapData->timeLimit, mapData->mythicPlusStartTimer, mapData->mythicLevel->level, mapData->done);
             }
         }
     }

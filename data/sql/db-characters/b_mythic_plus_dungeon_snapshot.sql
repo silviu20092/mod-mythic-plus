@@ -6,6 +6,7 @@ CREATE TABLE `mythic_plus_dungeon_snapshot`(
 	`starttime` bigint unsigned NOT NULL,
 	`snaptime` bigint unsigned NOT NULL,
 	`combattime` int unsigned NOT NULL,
+	`timelimit` int unsigned NOT NULL,
 	`char_guid` int unsigned NOT NULL,
 	`char_name` varchar(12) NOT NULL,
 	`mythiclevel` smallint unsigned NOT NULL,
