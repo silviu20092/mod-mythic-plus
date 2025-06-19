@@ -15,3 +15,13 @@
 #
 
 MythicPlus.Enable = 1
+
+#
+#    MythicPlus.Penalty.OnDeath
+#        Description: Time (in seconds) that applies as penalty whenever a player dies inside M+
+#        Values:      0  - no penalty
+#                     >0 - value in seconds
+#        Default:     15 - subtracts 15 seconds from the timer
+#
+
+MythicPlus.Penalty.OnDeath = 15

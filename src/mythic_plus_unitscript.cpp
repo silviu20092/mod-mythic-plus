@@ -47,7 +47,7 @@ public:
             if (mapData->mythicPlusStartTimer == 0)
             {
                 mapData->mythicPlusStartTimer = gameTime;
-                sMythicPlus->SaveDungeonInfo(map->GetInstanceId(), map->GetId(), mapData->timeLimit, mapData->mythicPlusStartTimer, mapData->mythicLevel->level, mapData->done);
+                sMythicPlus->SaveDungeonInfo(map->GetInstanceId(), map->GetId(), mapData->timeLimit, mapData->mythicPlusStartTimer, mapData->mythicLevel->level, mapData->penaltyOnDeath, mapData->deaths, mapData->done);
             }
 
             const Map::PlayerList& playerList = map->GetPlayers();
@@ -102,6 +102,9 @@ public:
 
                     bool finalBoss = sMythicPlus->IsFinalBoss(creature->GetEntry());
                     bool rewarded = false;
+                    MythicPlus::MapData* mapData = sMythicPlus->GetMapData(map, false);
+                    ASSERT(mapData);
+
                     if (finalBoss)
                     {
                         std::ostringstream oss2;
@@ -110,8 +113,6 @@ public:
                         MythicPlus::AnnounceToPlayer(player, oss2.str());
                         MythicPlus::BroadcastToPlayer(player, oss2.str());
 
-                        MythicPlus::MapData* mapData = sMythicPlus->GetMapData(map, false);
-                        ASSERT(mapData);
                         if (mapData->receiveLoot)
                         {
                             rewarded = true;
@@ -119,7 +120,7 @@ public:
                         }
                         mapData->done = true;
 
-                        sMythicPlus->SaveDungeonInfo(map->GetInstanceId(), map->GetId(), mapData->timeLimit, mapData->mythicPlusStartTimer, mapData->mythicLevel->level, true);
+                        sMythicPlus->SaveDungeonInfo(map->GetInstanceId(), map->GetId(), mapData->timeLimit, mapData->mythicPlusStartTimer, mapData->mythicLevel->level, mapData->penaltyOnDeath, mapData->deaths, true);
                     }
 
                     sMythicPlus->AddDungeonSnapshot(map->GetInstanceId(),
@@ -133,8 +134,10 @@ public:
                         player->GetName(),
                         savedDungeon->mythicLevel,
                         creature->GetEntry(),
-                        sMythicPlus->IsFinalBoss(creature->GetEntry()),
-                        rewarded
+                        finalBoss,
+                        rewarded,
+                        mapData->penaltyOnDeath,
+                        mapData->deaths
                     );
                 }
             }
@@ -192,7 +195,10 @@ public:
                 oss << "Have fun!";
                 MythicPlus::AnnounceToMap(map, oss.str());
 
-                sMythicPlus->SaveDungeonInfo(map->GetInstanceId(), map->GetId(), mapData->timeLimit, mapData->mythicPlusStartTimer, mapData->mythicLevel->level, mapData->done);
+                sMythicPlus->SaveDungeonInfo(map->GetInstanceId(), map->GetId(), mapData->timeLimit, mapData->mythicPlusStartTimer, mapData->mythicLevel->level, mapData->penaltyOnDeath, mapData->deaths, mapData->done);
+
+                if (mapData->penaltyOnDeath > 0)
+                    sMythicPlus->BroadcastToMap(map, MythicPlus::Utils::RedColored("Dying will give a penalty of " + secsToTimeString(mapData->penaltyOnDeath)));
             }
         }
     }

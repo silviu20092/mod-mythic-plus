@@ -12,5 +12,7 @@ CREATE TABLE `mythic_plus_dungeon_snapshot`(
 	`mythiclevel` smallint unsigned NOT NULL,
 	`creature_entry` int unsigned NOT NULL,
 	`creature_final_boss` tinyint unsigned NOT NULL DEFAULT '0',
-	`rewarded` tinyint unsigned NOT NULL DEFAULT '0'
+	`rewarded` tinyint unsigned NOT NULL DEFAULT '0',
+	`penalty_on_death` int unsigned NOT NULL DEFAULT '0',
+	`deaths` int unsigned NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

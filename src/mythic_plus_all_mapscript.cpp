@@ -38,7 +38,7 @@ public:
             {
                 // save even non Mythic Plus dungeon in DB, this is required for further edge checks
                 if (sMythicPlus->MatchMythicPlusMapDiff(map))
-                    sMythicPlus->SaveDungeonInfo(map->GetInstanceId(), map->GetId(), 0, 0L, 0, false, false);
+                    sMythicPlus->SaveDungeonInfo(map->GetInstanceId(), map->GetId(), 0, 0L, 0, 0, 0, false, false);
             }
         }
 
@@ -65,9 +65,11 @@ public:
                     timeLimit = mythicLevel->timeLimit;
                     mlevel = mythicLevel->level;
                 }
-                sMythicPlus->SaveDungeonInfo(instanceId, map->GetId(), timeLimit, 0L, mlevel, false);
+                sMythicPlus->SaveDungeonInfo(instanceId, map->GetId(), timeLimit, 0L, mlevel, sMythicPlus->GetPenaltyOnDeath(), 0, false);
 
                 mapData->timeLimit = timeLimit;
+                mapData->deaths = 0;
+                mapData->penaltyOnDeath = sMythicPlus->GetPenaltyOnDeath();
 
                 if (mythicLevel == nullptr)
                     MythicPlus::BroadcastToPlayer(player, "You entered a Mythic Plus capable dungeon but there is no Mythic Plus level set (you are either not in a group or the leader does not have any level set). This "
@@ -95,6 +97,8 @@ public:
                 mapData->mythicPlusStartTimer = savedDungeon->startTime;
                 mapData->done = savedDungeon->done;
                 mapData->timeLimit = savedDungeon->timeLimit;
+                mapData->deaths = savedDungeon->deaths;
+                mapData->penaltyOnDeath = savedDungeon->penaltyOnDeath;
             }
 
             // check if player can actually join Mythic Plus
@@ -133,7 +137,7 @@ public:
                     {
                         long long diff = GameTime::GetGameTime().count() - mapData->mythicPlusStartTimer;
                         mapData->updateTimer = diff * 1000;
-                        if (diff <= mapData->timeLimit)
+                        if (diff + mapData->GetPenaltyTime() <= mapData->timeLimit)
                         {
                             oss << "Mythic Plus dungeon is in progress. Current timer: ";
                             oss << secsToTimeString(diff);
@@ -146,6 +150,24 @@ public:
                             oss << "Limit timer: " << secsToTimeString(mapData->timeLimit);
                             oss << ". Current timer: " << secsToTimeString(diff);
                             mapData->receiveLoot = false;
+                        }
+
+                        if (mapData->penaltyOnDeath > 0)
+                        {
+                            std::ostringstream oss2;
+                            oss2 << "Dying will result in a penalty of ";
+                            oss2 << secsToTimeString(mapData->penaltyOnDeath);
+                            if (mapData->GetPenaltyTime() > 0)
+                            {
+                                oss2 << ". Current penalty: ";
+                                oss2 << secsToTimeString(mapData->GetPenaltyTime());
+
+                                oss << ". Current penalty: ";
+                                oss << secsToTimeString(mapData->GetPenaltyTime());
+                            }
+                            else
+                                oss2 << ". No deaths so far!";
+                            MythicPlus::BroadcastToPlayer(player, MythicPlus::Utils::RedColored(oss2.str()));
                         }
                     }
                     else
@@ -164,7 +186,7 @@ public:
             ASSERT(mapData);
             if (mapData->mythicPlusStartTimer > 0 && mapData->receiveLoot && !mapData->done)
             {
-                if (mapData->updateTimer / 1000 > mapData->timeLimit)
+                if (mapData->updateTimer / 1000 + mapData->GetPenaltyTime() > mapData->timeLimit)
                 {
                     MythicPlus::AnnounceToMap(map, "Time's up! You will not receive any Mythic Plus loot anymore.");
                     mapData->receiveLoot = false;

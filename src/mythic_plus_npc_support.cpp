@@ -435,7 +435,23 @@ void MythicPlusNpcSupport::AddMythicPlusDungeonSnapshotDetails(Player* player, C
     endTimeIdnt->uiName = oss.str();
     pagedData.data.push_back(endTimeIdnt);
 
-    uint32 id = 3;
+    Identifier* deathsIdnt = new Identifier();
+    deathsIdnt->id = 4;
+    oss.str("");
+    oss.clear();
+    if (csnap->totalDeaths > 0)
+    {
+        oss << "Deaths: ";
+        oss << MythicPlus::Utils::RedColored(Acore::ToString(csnap->totalDeaths));
+        oss << ". Time penalty: ";
+        oss << secsToTimeString(csnap->penaltyOnDeath * csnap->totalDeaths);
+    }
+    else
+        oss << MythicPlus::Utils::GreenColored("NO DEATHS");
+    deathsIdnt->uiName = oss.str();
+    pagedData.data.push_back(deathsIdnt);
+
+    uint32 id = 4;
     for (const auto& s : chosenSnaps)
     {
         oss.str("");

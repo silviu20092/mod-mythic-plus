@@ -45,6 +45,13 @@ public:
         bool receiveLoot = true;
         bool done = false;
         uint32 timeLimit = 0;
+        uint32 penaltyOnDeath = 0;
+        uint32 deaths = 0;
+
+        uint32 GetPenaltyTime() const
+        {
+            return penaltyOnDeath * deaths;
+        }
     };
 
     class CreatureData : public DataMap::Base
@@ -76,6 +83,8 @@ public:
         uint32 mythicLevel;
         bool done;
         bool isMythic; // we save dungeon data for ALL dungeons, no matter if mythic or not
+        uint32 penaltyOnDeath;
+        uint32 deaths;
     };
 
     struct MythicPlusDungeonSnapshot
@@ -95,6 +104,9 @@ public:
         uint32 internalId;
         uint32 endTime;
         uint32 difficulty;
+        uint32 penaltyOnDeath;
+        uint32 deaths;
+        uint32 totalDeaths;
     };
 
     class Utils
@@ -151,6 +163,7 @@ public:
     static void AnnounceToPlayer(const Player* player, const std::string& message);
     static void AnnounceToGroup(const Player* player, const std::string& message);
     static void AnnounceToMap(const Map* map, const std::string& message);
+    static void BroadcastToMap(const Map* map, const std::string& message);
     static void FallbackTeleport(Player* player);
 
     bool CanBeMythicPlus(const MapEntry* mapEntry) const;
@@ -166,10 +179,10 @@ public:
     bool IsMapInMythicPlus(Map* map) const;
     void LoadFromDB();
     MythicPlusDungeonInfo* GetSavedDungeonInfo(uint32 instanceId);
-    void SaveDungeonInfo(uint32 instanceId, uint32 mapId, uint32 timeLimit, uint64 startTime, uint32 mythicLevel, bool done, bool isMythic = true);
+    void SaveDungeonInfo(uint32 instanceId, uint32 mapId, uint32 timeLimit, uint64 startTime, uint32 mythicLevel, uint32 penaltyOnDeath, uint32 deaths, bool done, bool isMythic = true);
     void AddDungeonSnapshot(uint32 instanceId, uint32 mapId, Difficulty mapDiff, uint64 startTime,
         uint64 snapTime, uint32 combatTime, uint32 timelimit, uint32 charGuid, std::string charName,
-        uint32 mythicLevel, uint32 creatureEntry, bool isFinalBoss, bool rewarded);
+        uint32 mythicLevel, uint32 creatureEntry, bool isFinalBoss, bool rewarded, uint32 penaltyOnDeath, uint32 deaths);
     bool IsFinalBoss(uint32 entry) const;
     void Reward(Player* player, const MythicReward& reward) const;
     void RemoveDungeonInfo(uint32 instanceId);
@@ -207,12 +220,17 @@ public:
     }
     bool MatchMythicPlusMapDiff(const Map* map) const;
     bool IsCreatureIgnoredForMultiplyAffix(uint32 entry) const;
+    uint32 GetPenaltyOnDeath() const
+    {
+        return penaltyOnDeath;
+    }
 private:
     std::unordered_map<uint32, Difficulty> mythicPlusDungeons;
     std::unordered_map<uint32, MythicPlusDungeonInfo> mythicPlusDungeonInfo;
     std::unordered_map<uint32, uint32> charMythicLevels;
     bool enabled;
     std::set<uint32> ignoredEntriesForMultiplyAffix;
+    uint32 penaltyOnDeath;
 
     MythicLevelContainer mythicLevels;
 

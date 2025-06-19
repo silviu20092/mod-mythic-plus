@@ -12,7 +12,8 @@ public:
     mythic_plus_playerscript() : PlayerScript("mythic_plus_playerscript",
         {
             PLAYERHOOK_CAN_ENTER_MAP,
-            PLAYERHOOK_ON_LOGIN
+            PLAYERHOOK_ON_LOGIN,
+            PLAYERHOOK_ON_PLAYER_JUST_DIED
         }
     )
     {
@@ -44,6 +45,30 @@ public:
             uint32 mplusLevel = sMythicPlus->GetCurrentMythicPlusLevelForGUID(leaderGuid.GetCounter());
             if (mplusLevel > 0)
                 MythicPlus::BroadcastToPlayer(player, "Your group's leader (can even be you) has a Mythic Plus level set. You will automatically join Mythic Plus dungeons. Current set level: " + Acore::ToString(mplusLevel));
+        }
+    }
+
+    void OnPlayerJustDied(Player* player) override
+    {
+        if (player && sMythicPlus->IsInMythicPlus(player))
+        {
+            MythicPlus::MapData* mapData = sMythicPlus->GetMapData(player->GetMap(), false);
+            ASSERT(mapData);
+
+            if (mapData->penaltyOnDeath > 0 && mapData->mythicPlusStartTimer > 0 && !mapData->done)
+            {
+                std::ostringstream oss;
+                oss << player->GetName() << " just died, a penalty of ";
+                oss << secsToTimeString(mapData->penaltyOnDeath);
+                oss << " was applied.";
+
+                Map* map = player->GetMap();
+                sMythicPlus->BroadcastToMap(player->GetMap(), MythicPlus::Utils::RedColored(oss.str()));
+
+                mapData->deaths++;
+                
+                sMythicPlus->SaveDungeonInfo(map->GetInstanceId(), map->GetId(), mapData->timeLimit, mapData->mythicPlusStartTimer, mapData->mythicLevel->level, mapData->penaltyOnDeath, mapData->deaths, mapData->done);
+            }
         }
     }
 };

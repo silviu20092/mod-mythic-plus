@@ -13,6 +13,7 @@
 MythicPlus::MythicPlus()
 {
     enabled = true;
+    penaltyOnDeath = 15;
     CreateMythicPlusDungeons();
 }
 
@@ -84,6 +85,17 @@ MythicPlus::CreatureData* MythicPlus::GetCreatureData(Creature* creature, bool w
     for (Map::PlayerList::const_iterator itr = playerList.begin(); itr != playerList.end(); ++itr)
         if (Player* player = itr->GetSource())
             AnnounceToPlayer(player, message);
+}
+
+/*static*/ void MythicPlus::BroadcastToMap(const Map* map, const std::string& message)
+{
+    Map::PlayerList const& playerList = map->GetPlayers();
+    if (playerList.IsEmpty())
+        return;
+
+    for (Map::PlayerList::const_iterator itr = playerList.begin(); itr != playerList.end(); ++itr)
+        if (Player* player = itr->GetSource())
+            BroadcastToPlayer(player, message);
 }
 
 /*static*/ void MythicPlus::FallbackTeleport(Player* player)
@@ -260,10 +272,10 @@ MythicPlus::MythicPlusDungeonInfo* MythicPlus::GetSavedDungeonInfo(uint32 instan
     return nullptr;
 }
 
-void MythicPlus::SaveDungeonInfo(uint32 instanceId, uint32 mapId, uint32 timeLimit, uint64 startTime, uint32 mythicLevel, bool done, bool isMythic)
+void MythicPlus::SaveDungeonInfo(uint32 instanceId, uint32 mapId, uint32 timeLimit, uint64 startTime, uint32 mythicLevel, uint32 penaltyOnDeath, uint32 deaths, bool done, bool isMythic)
 {
-    CharacterDatabase.Execute("REPLACE INTO mythic_plus_dungeon (id, map, timelimit, starttime, mythiclevel, done, ismythic) VALUES ({}, {}, {}, {}, {}, {}, {})",
-        instanceId, mapId, timeLimit, startTime, mythicLevel, done, isMythic);
+    CharacterDatabase.Execute("REPLACE INTO mythic_plus_dungeon (id, map, timelimit, starttime, mythiclevel, done, ismythic, penalty_on_death, deaths) VALUES ({}, {}, {}, {}, {}, {}, {}, {}, {})",
+        instanceId, mapId, timeLimit, startTime, mythicLevel, done, isMythic, penaltyOnDeath, deaths);
 
     MythicPlusDungeonInfo* dungeonInfo = GetSavedDungeonInfo(instanceId);
     if (dungeonInfo == nullptr)
@@ -276,21 +288,24 @@ void MythicPlus::SaveDungeonInfo(uint32 instanceId, uint32 mapId, uint32 timeLim
         dungeonInfo.mythicLevel = mythicLevel;
         dungeonInfo.done = done;
         dungeonInfo.isMythic = isMythic;
+        dungeonInfo.penaltyOnDeath = penaltyOnDeath;
+        dungeonInfo.deaths = deaths;
         mythicPlusDungeonInfo[instanceId] = dungeonInfo;
     }
     else
     {
         dungeonInfo->startTime = startTime;
         dungeonInfo->done = done;
+        dungeonInfo->deaths = deaths;
     }
 }
 
 void MythicPlus::AddDungeonSnapshot(uint32 instanceId, uint32 mapId, Difficulty mapDiff, uint64 startTime,
     uint64 snapTime, uint32 combatTime, uint32 timelimit, uint32 charGuid, std::string charName,
-    uint32 mythicLevel, uint32 creatureEntry, bool isFinalBoss, bool rewarded)
+    uint32 mythicLevel, uint32 creatureEntry, bool isFinalBoss, bool rewarded, uint32 penaltyOnDeath, uint32 deaths)
 {
-    CharacterDatabase.Execute("INSERT INTO mythic_plus_dungeon_snapshot (id, map, mapdifficulty, starttime, snaptime, combattime, timelimit, char_guid, char_name, mythiclevel, creature_entry, creature_final_boss, rewarded) VALUES "
-        "({}, {}, {}, {}, {}, {}, {}, {}, \"{}\", {}, {}, {}, {})", instanceId, mapId, mapDiff, startTime, snapTime, combatTime, timelimit, charGuid, charName, mythicLevel, creatureEntry, isFinalBoss, rewarded);
+    CharacterDatabase.Execute("INSERT INTO mythic_plus_dungeon_snapshot (id, map, mapdifficulty, starttime, snaptime, combattime, timelimit, char_guid, char_name, mythiclevel, creature_entry, creature_final_boss, rewarded, penalty_on_death, deaths) VALUES "
+        "({}, {}, {}, {}, {}, {}, {}, {}, \"{}\", {}, {}, {}, {}, {}, {})", instanceId, mapId, mapDiff, startTime, snapTime, combatTime, timelimit, charGuid, charName, mythicLevel, creatureEntry, isFinalBoss, rewarded, penaltyOnDeath, deaths);
 }
 
 void MythicPlus::CreateMythicPlusDungeons()
@@ -331,7 +346,7 @@ void MythicPlus::LoadMythicPlusDungeonsFromDB()
 {
     mythicPlusDungeonInfo.clear();
 
-    QueryResult result = CharacterDatabase.Query("SELECT id, map, timelimit, starttime, mythiclevel, done, ismythic FROM mythic_plus_dungeon");
+    QueryResult result = CharacterDatabase.Query("SELECT id, map, timelimit, starttime, mythiclevel, done, ismythic, penalty_on_death, deaths FROM mythic_plus_dungeon");
     if (!result)
         return;
 
@@ -346,6 +361,8 @@ void MythicPlus::LoadMythicPlusDungeonsFromDB()
         uint32 mythicLevel = fields[4].Get<uint32>();
         bool done = fields[5].Get<bool>();
         bool isMythic = fields[6].Get<bool>();
+        uint32 penaltyOnDeath = fields[7].Get<uint32>();
+        uint32 deaths = fields[8].Get<uint32>();
 
         MythicPlusDungeonInfo dungeonInfo;
         dungeonInfo.instanceId = instanceId;
@@ -355,6 +372,8 @@ void MythicPlus::LoadMythicPlusDungeonsFromDB()
         dungeonInfo.mythicLevel = mythicLevel;
         dungeonInfo.done = done;
         dungeonInfo.isMythic = isMythic;
+        dungeonInfo.penaltyOnDeath = penaltyOnDeath;
+        dungeonInfo.deaths = deaths;
 
         mythicPlusDungeonInfo[instanceId] = dungeonInfo;
     } while (result->NextRow());
@@ -411,7 +430,9 @@ void MythicPlus::LoadMythicPlusSnapshotsFromDB()
             "max(creature_final_boss) creature_final_boss, "
             "max(rewarded) rewarded, "
             "mpds.mapdifficulty, "
-            "mpds.timelimit "
+            "mpds.timelimit, "
+            "max(mpds.penalty_on_death) penalty_on_death, "
+            "max(mpds.deaths) deaths "
         "from mythic_plus_dungeon_snapshot mpds "
         "group by mpds.id, mpds.map, mpds.mapdifficulty, mpds.starttime, mpds.timelimit, mpds.snaptime, mpds.creature_entry";
     _queryProcessor.AddCallback(CharacterDatabase.AsyncQuery(query).WithCallback(std::bind(&MythicPlus::MythicPlusSnapshotsDBCallback, this, std::placeholders::_1)));
@@ -759,6 +780,8 @@ void MythicPlus::MythicPlusSnapshotsDBCallback(QueryResult result)
         snapshot.rewarded = fields[9].Get<bool>();
         snapshot.difficulty = fields[10].Get<bool>();
         snapshot.timelimit = fields[11].Get<uint32>();
+        snapshot.penaltyOnDeath = fields[12].Get<uint32>();
+        snapshot.deaths = fields[13].Get<uint32>();
         mapSnapshots[snapshot.mapId][std::make_pair(snapshot.id, snapshot.startTime)].push_back(snapshot);
     } while (result->NextRow());
 
@@ -771,6 +794,7 @@ void MythicPlus::MythicPlusSnapshotsDBCallback(QueryResult result)
             uint32 totalTime = 0;
             uint32 endTime = 0;
             bool rewarded = false;
+            uint32 totalDeaths = 0;
             for (const auto& s : snaps)
             {
                 if (s.finalBoss)
@@ -778,6 +802,8 @@ void MythicPlus::MythicPlusSnapshotsDBCallback(QueryResult result)
                     rewarded = s.rewarded;
                     totalTime = s.snapTime - s.startTime;
                     endTime = s.snapTime;
+                    totalDeaths = s.deaths;
+                    break;
                 }
             }
             for (auto& s : snaps)
@@ -785,6 +811,7 @@ void MythicPlus::MythicPlusSnapshotsDBCallback(QueryResult result)
                 s.rewarded = rewarded;
                 s.totalTime = totalTime;
                 s.endTime = endTime;
+                s.totalDeaths = totalDeaths;
             }
         }
 
@@ -839,6 +866,8 @@ void MythicPlus::ProcessConfig(bool reload)
 {
     if (!reload)
         enabled = sConfigMgr->GetOption<bool>("MythicPlus.Enable", true);
+
+    penaltyOnDeath = sConfigMgr->GetOption<uint32>("MythicPlus.Penalty.OnDeath", 15);
 }
 
 bool MythicPlus::MatchMythicPlusMapDiff(const Map* map) const
