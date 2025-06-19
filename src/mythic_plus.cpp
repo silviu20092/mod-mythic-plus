@@ -2,6 +2,7 @@
  * Credits: silviu20092
  */
 
+#include <iomanip>
 #include "AreaDefines.h"
 #include "Chat.h"
 #include "Group.h"

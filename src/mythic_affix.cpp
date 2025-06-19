@@ -2,6 +2,7 @@
  * Credits: silviu20092
  */
 
+#include <iomanip>
 #include "Creature.h"
 #include "mythic_plus.h"
 #include "mythic_affix.h"
