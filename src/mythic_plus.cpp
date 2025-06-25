@@ -7,6 +7,7 @@
 #include "Chat.h"
 #include "Group.h"
 #include "Config.h"
+#include "GameTime.h"
 #include "mythic_affix.h"
 #include "mythic_plus.h"
 
@@ -146,58 +147,6 @@ bool MythicPlus::CanProcessCreature(const Creature* creature) const
         return false;
 
     return true;
-}
-
-MythicPlus::MythicPlusDungeonEnterState MythicPlus::CanEnterDungeon(Map* map, const Player* player) const
-{
-    if (!CanMapBeMythicPlus(map))
-        return ENTER_STATE_OK;
-
-    const MythicPlusDungeonInfo* savedDungeon = sMythicPlus->GetSavedDungeonInfo(map->GetInstanceId());
-    ASSERT(savedDungeon);
-
-    // if no Mythic Plus level was set, just allow
-    if (savedDungeon->mythicLevel == 0)
-        return ENTER_STATE_OK;
-
-    // player must be in a group and the leader must be online in order to join M+
-    ObjectGuid leaderGuid = GetLeaderGuid(player);
-    if (leaderGuid.IsEmpty())
-        return ENTER_STATE_NO_GROUP_LEADER;
-
-    Player* leader = ObjectAccessor::FindConnectedPlayer(leaderGuid);
-    if (!leader)
-        return ENTER_STATE_LEADER_OFFLINE;
-
-    return ENTER_STATE_OK;
-}
-
-MythicPlus::MythicPlusDungeonEnterState MythicPlus::CanEnterDungeonFromEntry(const MapEntry* mapEntry, const Player* player) const
-{
-    if (!CanBeMythicPlus(mapEntry))
-        return ENTER_STATE_OK;
-
-    // allow entry if no group
-    ObjectGuid leaderGuid = GetLeaderGuid(player);
-    if (leaderGuid.IsEmpty())
-        return ENTER_STATE_OK;
-
-    // first, check if the map can actually start a M+ dungeon
-    Difficulty playerDiff = player->GetDifficulty(false);
-    Difficulty dungeonDiff = mythicPlusDungeons.at(mapEntry->MapID);
-    if (playerDiff < dungeonDiff)
-        return ENTER_STATE_OK;
-
-    uint32 leaderMythicLevel = GetCurrentMythicPlusLevelForGUID(leaderGuid.GetCounter());
-    if (leaderMythicLevel == 0)
-        return ENTER_STATE_OK;
-
-    // let's just wait for the leader to come online
-    Player* leader = ObjectAccessor::FindConnectedPlayer(leaderGuid);
-    if (!leader)
-        return ENTER_STATE_LEADER_OFFLINE;
-
-    return ENTER_STATE_OK;
 }
 
 void MythicPlus::StoreOriginalCreatureData(Creature* creature) const
@@ -671,6 +620,20 @@ void MythicPlus::LoadMythicLevelsFromDB()
     return oss.str();
 }
 
+/*static*/ bool MythicPlus::Utils::IsGroupLeader(const Player* player)
+{
+    const Group* group = player->GetGroup();
+    if (group == nullptr)
+        return false;
+
+    return group->GetLeaderGUID() == player->GetGUID();
+}
+
+/*static*/ long long MythicPlus::Utils::GameTimeCount()
+{
+    return GameTime::GetGameTime().count();
+}
+
 bool MythicPlus::IsFinalBoss(uint32 entry) const
 {
     return entry == 36502       // Forge of Souls
@@ -724,9 +687,9 @@ uint32 MythicPlus::GetCurrentMythicPlusLevelForGUID(uint32 guid) const
     return 0;
 }
 
-bool MythicPlus::SetCurrentMythicPlusLevel(const Player* player, uint32 mythiclevel)
+bool MythicPlus::SetCurrentMythicPlusLevel(const Player* player, uint32 mythiclevel, bool force)
 {
-    if (player->GetGroup() == nullptr)
+    if (player->GetGroup() == nullptr || force)
     {
         uint32 guid = Utils::PlayerGUID(player);
         charMythicLevels[guid] = mythiclevel;
@@ -891,4 +854,14 @@ bool MythicPlus::MatchMythicPlusMapDiff(const Map* map) const
 bool MythicPlus::IsCreatureIgnoredForMultiplyAffix(uint32 entry) const
 {
     return ignoredEntriesForMultiplyAffix.find(entry) != ignoredEntriesForMultiplyAffix.end();
+}
+
+bool MythicPlus::GiveKeystone(Player* player) const
+{
+    return player->AddItem(KEYSTONE_ENTRY, 1);
+}
+
+void MythicPlus::RemoveKeystone(Player* player) const
+{
+    player->DestroyItemCount(KEYSTONE_ENTRY, 1, true);
 }

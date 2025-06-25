@@ -16,14 +16,12 @@ Adds the possibility to transform certain dungeons into Mythic Plus dungeons. Th
 
 ## How it works
 
-First, the Mythic Plus NPC must be spawned: **.npc add 200005**. Players can now choose a desired M+ level (for now, only 5 levels are available). Each level will have one or more affix, affix descriptions are available via the NPC.
-You will always need to be in a group for a dungeon to become M+, and the Mythic level chosen will always be taken from the group's leader. While in a group, players will not be able to change their M+ level.
-If in a group and the leader has a M+ level set, then as soon as a dungeon is joined (no matter by which player in the group), then it will become Mythic Plus and it will be saved as such (until reset).
+First, the Mythic Plus NPC must be spawned: **.npc add 200005**. Players can now choose a desired M+ level. Each level will have one or more affix, affix descriptions are available via the NPC. Players will not be able to change their M+ level while in a group. Use the NPC to buy Mythic Keystone. Mythic Keystone is an unique item that is used to transform a dungeon into a Mythic Plus dungeon. Only the group's leader can use the keystone while inside of a Mythic Plus capable dungeon.
 
 ### Timer
 
 Each M+ level will have a time limit to beat. If the group beats the timer, then rewards will be given (check **MythicPlus::CreateMythicLevels()** and you can modify the rewards or levels to your liking). If timer is not beat, then no rewards will be given, but group can still try to finish the dungeon.
-Timer countdown starts as soon as a **creature inside the dungeon** is killed. Until a creature is killed, players can stay inside (perform buffs, checks etc) and the countdown won't begin.
+As soon as the group's leader uses a Mythic Keystone, 10 seconds will pass and the dungeon will become Mythic Plus. The dungeon timer will start as soon as the dungeon becomes Mythic Plus.
 
 ### M+ dungeons tracking
 

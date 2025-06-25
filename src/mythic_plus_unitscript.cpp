@@ -38,17 +38,7 @@ public:
             if (!attacker->ToPlayer() && !attacker->IsControlledByPlayer())
                 return;
 
-            uint32 gameTime = GameTime::GetGameTime().count();
-            creatureData->engageTimer = gameTime;
-
-            // a boss was engaged so in 99.9% cases the mythic plus timer was already started, but double check anyway
-            MythicPlus::MapData* mapData = sMythicPlus->GetMapData(map, false);
-            ASSERT(mapData);
-            if (mapData->mythicPlusStartTimer == 0)
-            {
-                mapData->mythicPlusStartTimer = gameTime;
-                sMythicPlus->SaveDungeonInfo(map->GetInstanceId(), map->GetId(), mapData->timeLimit, mapData->mythicPlusStartTimer, mapData->mythicLevel->level, mapData->penaltyOnDeath, mapData->deaths, mapData->done);
-            }
+            creatureData->engageTimer = MythicPlus::Utils::GameTimeCount();
 
             const Map::PlayerList& playerList = map->GetPlayers();
             for (Map::PlayerList::const_iterator itr = playerList.begin(); itr != playerList.end(); ++itr)
@@ -172,33 +162,29 @@ public:
     {
         if (unit && killer && unit->GetMap() == killer->GetMap())
         {
-            if (!sMythicPlus->IsInMythicPlus(unit))
+            Map* map = unit->GetMap();
+            if (!sMythicPlus->CanMapBeMythicPlus(map))
                 return;
 
             Creature* creature = unit->ToCreature();
             if (!creature || !sMythicPlus->CanProcessCreature(creature))
                 return;
 
-            // prevent timer start in cases like Drak'Tharon Keep where dungeon mobs kill each other at the start
+            // prevent cases like Drak'Tharon Keep where dungeon mobs kill each other at the start
             if (killer->ToCreature() != nullptr && !killer->IsControlledByPlayer())
                 return;
-
-            Map* map = unit->GetMap();
-            MythicPlus::MapData* mapData = sMythicPlus->GetMapData(map, false);
-            ASSERT(mapData);
+        
+            MythicPlus::MapData* mapData = sMythicPlus->GetMapData(map);
+            // check if a creature was killed by a player and we can be in a M+ dungeon but it was not yet started,
+            // in which case we mark this dungeon as non M+
             if (mapData->mythicPlusStartTimer == 0)
             {
-                mapData->mythicPlusStartTimer = GameTime::GetGameTime().count();
-                std::ostringstream oss;
-                oss << "Mythic Plus timer started! ";
-                oss << "Beat this timer to get loot: " << secsToTimeString(mapData->timeLimit) << ". ";
-                oss << "Have fun!";
-                MythicPlus::AnnounceToMap(map, oss.str());
+                const MythicPlus::MythicPlusDungeonInfo* dsave = sMythicPlus->GetSavedDungeonInfo(map->GetInstanceId());
+                if (dsave != nullptr && !dsave->isMythic)
+                    return;
 
-                sMythicPlus->SaveDungeonInfo(map->GetInstanceId(), map->GetId(), mapData->timeLimit, mapData->mythicPlusStartTimer, mapData->mythicLevel->level, mapData->penaltyOnDeath, mapData->deaths, mapData->done);
-
-                if (mapData->penaltyOnDeath > 0)
-                    sMythicPlus->BroadcastToMap(map, MythicPlus::Utils::RedColored("Dying will give a penalty of " + secsToTimeString(mapData->penaltyOnDeath)));
+                sMythicPlus->SaveDungeonInfo(map->GetInstanceId(), map->GetId(), 0, 0L, 0, 0, 0, false, false);
+                MythicPlus::AnnounceToMap(map, "This dungeon is now saved as non Mythic Plus!");
             }
         }
     }

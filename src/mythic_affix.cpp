@@ -175,7 +175,7 @@ void RandomlyExplodeAffix::HandlePeriodicEffect(Unit* unit, uint32 diff)
         MythicPlus::MapData* mapData = sMythicPlus->GetMapData(player->GetMap(), false);
         ASSERT(mapData);
 
-        if (roll_chance_i(40) && mapData->mythicPlusStartTimer > 0 && !mapData->done)
+        if (roll_chance_i(40) && !mapData->done)
         {
             player->CastSpell(player, EXPLOSION_VISUAL, true);
             uint32 damage = (uint32)(frand(15, 35) / 100 * player->GetMaxHealth());
@@ -201,8 +201,8 @@ void LightningSphereAffix::HandlePeriodicEffectMap(Map* map, uint32 diff)
         if (roll_chance_f(chanceOfSpawn))
         {
             MythicPlus::MapData* mapData = sMythicPlus->GetMapData(map, false);
-            // don't try to spawn spheres if the timer is not yet started or if the dungeon is finished
-            if (mapData->mythicPlusStartTimer == 0 || mapData->done)
+            // don't try to spawn spheres if the dungeon is finished
+            if (mapData->done)
                 return;
 
             Map::PlayerList const& playerList = map->GetPlayers();

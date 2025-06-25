@@ -11,7 +11,6 @@ class mythic_plus_playerscript : public PlayerScript
 public:
     mythic_plus_playerscript() : PlayerScript("mythic_plus_playerscript",
         {
-            PLAYERHOOK_CAN_ENTER_MAP,
             PLAYERHOOK_ON_LOGIN,
             PLAYERHOOK_ON_PLAYER_JUST_DIED
         }
@@ -19,24 +18,15 @@ public:
     {
     }
 
-    bool OnPlayerCanEnterMap(Player* player, MapEntry const* entry, InstanceTemplate const* /*instance*/, MapDifficulty const* /*mapDiff*/, bool /*loginCheck*/) override
-    {
-        MythicPlus::MythicPlusDungeonEnterState enterState = sMythicPlus->CanEnterDungeonFromEntry(entry, player);
-        if (enterState < MythicPlus::MythicPlusDungeonEnterState::ENTER_STATE_OK)
-        {
-            if (enterState == MythicPlus::MythicPlusDungeonEnterState::ENTER_STATE_LEADER_OFFLINE)
-                MythicPlus::BroadcastToPlayer(player, "Group's leader must be online in order to join Mythic Plus --> (as you are in a group and the leader has a Mythic Plus level set this check is performed even if instance save data might be different)");
-
-            return false;
-        }
-
-        return true;
-    }
-
     void OnPlayerLogin(Player* player) override
     {
         if (!sMythicPlus->IsEnabled())
             return;
+
+        // check if the saved M+ level is still present (maybe it was removed from DB in the meantime)
+        uint32 playerMplusLevel = sMythicPlus->GetCurrentMythicPlusLevel(player);
+        if (playerMplusLevel > 0 && !sMythicPlus->GetMythicLevel(playerMplusLevel))
+            sMythicPlus->SetCurrentMythicPlusLevel(player, 0, true); // force reset the level, this is an edge case anyway
 
         Group* group = player->GetGroup();
         if (group != nullptr)
@@ -44,7 +34,7 @@ public:
             ObjectGuid leaderGuid = group->GetLeaderGUID();
             uint32 mplusLevel = sMythicPlus->GetCurrentMythicPlusLevelForGUID(leaderGuid.GetCounter());
             if (mplusLevel > 0)
-                MythicPlus::BroadcastToPlayer(player, "Your group's leader (can even be you) has a Mythic Plus level set. You will automatically join Mythic Plus dungeons. Current set level: " + Acore::ToString(mplusLevel));
+                MythicPlus::BroadcastToPlayer(player, "Your group's leader (can even be you) has a Mythic Plus level set. The leader can use a Mythic Keystone to start a level " + Acore::ToString(mplusLevel) + " Mythic Plus dungeon!");
         }
     }
 
@@ -55,7 +45,7 @@ public:
             MythicPlus::MapData* mapData = sMythicPlus->GetMapData(player->GetMap(), false);
             ASSERT(mapData);
 
-            if (mapData->penaltyOnDeath > 0 && mapData->mythicPlusStartTimer > 0 && !mapData->done)
+            if (mapData->penaltyOnDeath > 0 && !mapData->done)
             {
                 std::ostringstream oss;
                 oss << player->GetName() << " just died, a penalty of ";

@@ -34,7 +34,7 @@ public:
                     return;
 
                 MythicPlus::MapData* mapData = sMythicPlus->GetMapData(map, false);
-                if (mapData->mythicPlusStartTimer == 0 || mapData->done)
+                if (mapData->done)
                     return;
 
                 std::list<Player*> playerList;

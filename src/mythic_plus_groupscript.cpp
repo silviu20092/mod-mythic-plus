@@ -27,7 +27,7 @@ public:
                 std::ostringstream oss;
                 oss << "This group's leader has a Mythic Plus level set (level: ";
                 oss << sMythicPlus->GetCurrentMythicPlusLevelForGUID(leaderGuid.GetCounter());
-                oss << ")! You will join Mythic Plus alongisde his/her level.";
+                oss << ")! Group's leader can use a Mythic Keystone to transform a dungeon into Mythic Plus.";
                 MythicPlus::BroadcastToPlayer(player, oss.str());
             }
         }

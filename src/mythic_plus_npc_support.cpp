@@ -89,8 +89,17 @@ void MythicPlusNpcSupport::AddMainMenu(Player* player, Creature* creature)
     standings->uiName = "Mythic Plus standings -->";
     pagedData.data.push_back(standings);
 
+    if (!player->HasItemCount(MythicPlus::KEYSTONE_ENTRY))
+    {
+        Identifier* keystoneIdnt = new Identifier();
+        keystoneIdnt->id = 8;
+        keystoneIdnt->uiName = MythicPlus::Utils::Colored("Acquire Mythic Plus keystone", "700c63");
+        keystoneIdnt->optionIcon = GOSSIP_ICON_MONEY_BAG;
+        pagedData.data.push_back(keystoneIdnt);
+    }
+
     Identifier* bye = new Identifier();
-    bye->id = 8;
+    bye->id = 9;
     bye->uiName = "Nevermind...";
     pagedData.data.push_back(bye);
 
@@ -523,6 +532,14 @@ bool MythicPlusNpcSupport::TakePagedDataAction(Player* player, Creature* creatur
             return AddPagedData(player, creature, 0);
         }
         else if (action == 8)
+        {
+            if (!sMythicPlus->GiveKeystone(player))
+                MythicPlus::BroadcastToPlayer(player, "Can't add keystone.");
+
+            CloseGossipMenuFor(player);
+            return true;
+        }
+        else if (action == 9)
         {
             CloseGossipMenuFor(player);
             return true;

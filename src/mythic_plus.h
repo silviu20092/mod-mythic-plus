@@ -33,6 +33,8 @@ private:
     ~MythicPlus();
 public:
     static constexpr uint32 MYTHIC_SNAPSHOTS_TIMER_FREQ = 60 * 10 * 1000;
+    static constexpr uint32 KEYSTONE_START_TIMER = 10 * 1000;
+    static constexpr uint32 KEYSTONE_ENTRY = 70001;
 
     class MapData : public DataMap::Base
     {
@@ -41,6 +43,8 @@ public:
 
         const MythicLevel* mythicLevel = nullptr;
         long long mythicPlusStartTimer = 0;
+        long long keystoneTimer = 0;
+        uint32 keystoneLevel = 0;
         uint64 updateTimer = 0;
         bool receiveLoot = true;
         bool done = false;
@@ -128,6 +132,8 @@ public:
         static void VisualFeedback(Player* player);
         static std::string FormatFloat(float val, uint32 decimals = 2);
         static std::string DateFromSeconds(uint64 seconds);
+        static bool IsGroupLeader(const Player* player);
+        static long long GameTimeCount();
     };
 
     struct DBAffix
@@ -169,8 +175,6 @@ public:
     bool CanBeMythicPlus(const MapEntry* mapEntry) const;
     bool CanMapBeMythicPlus(const Map* map) const;
     bool CanProcessCreature(const Creature* creature) const;
-    MythicPlusDungeonEnterState CanEnterDungeon(Map* map, const Player* player) const;
-    MythicPlusDungeonEnterState CanEnterDungeonFromEntry(const MapEntry* mapEntry, const Player* player) const;
     void StoreOriginalCreatureData(Creature* creature) const;
     const MythicLevel* GetMythicLevel(uint32 level) const;
     void ProcessStaticAffixes(const MythicLevel* mythicLevel, Creature* creature) const;
@@ -192,7 +196,7 @@ public:
     }
     uint32 GetCurrentMythicPlusLevel(const Player* player) const;
     uint32 GetCurrentMythicPlusLevelForGUID(uint32 guid) const;
-    bool SetCurrentMythicPlusLevel(const Player* player, uint32 mythiclevel);
+    bool SetCurrentMythicPlusLevel(const Player* player, uint32 mythiclevel, bool force = false);
     uint32 GetCurrentMythicPlusLevelForDungeon(const Player* player) const;
     const std::unordered_map<uint32, Difficulty>& GetAllMythicPlusDungeons() const
     {
@@ -224,6 +228,8 @@ public:
     {
         return penaltyOnDeath;
     }
+    bool GiveKeystone(Player* player) const;
+    void RemoveKeystone(Player* player) const;
 private:
     std::unordered_map<uint32, Difficulty> mythicPlusDungeons;
     std::unordered_map<uint32, MythicPlusDungeonInfo> mythicPlusDungeonInfo;
