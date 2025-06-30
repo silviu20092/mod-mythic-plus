@@ -210,9 +210,9 @@ public:
 class EntanglingRootsAffix : public MythicAffix
 {
 private:
-    static constexpr float chance = 5.33f;
+    static constexpr float chance = 15.33f;
     static constexpr uint32 ENTANGLING_ROOTS_SPELL_ID = 57095;
-    static constexpr uint32 checkAtTimer = 20000;
+    static constexpr uint32 checkAtTimer = 10000;
 
     std::unordered_map<uint32, uint32> timerMap;
 public:
