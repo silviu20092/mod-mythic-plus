@@ -16,12 +16,12 @@ Adds the possibility to transform certain dungeons into Mythic Plus dungeons. Th
 
 ## How it works
 
-First, the Mythic Plus NPC must be spawned: **.npc add 200005**. Players can now choose a desired M+ level. Each level will have one or more affix, affix descriptions are available via the NPC. Players will not be able to change their M+ level while in a group. Use the NPC to buy Mythic Keystone. Mythic Keystone is an unique item that is used to transform a dungeon into a Mythic Plus dungeon. Only the group's leader can use the keystone while inside of a Mythic Plus capable dungeon.
+First, the Mythic Plus NPC must be spawned: **.npc add 200005**. Players can now choose a desired M+ level. Each level will have one or more affix, affix descriptions are available via the NPC. Players will not be able to change their M+ level while in a group. Use the NPC to buy Mythic Keystone. Mythic Keystone is an unique item that is used to transform a dungeon into a Mythic Plus dungeon. Players can acquire the keystone once every **MythicPlus.KeystoneBuyTimer** minutes (this is a config option, leave 0 to disable it). Only the group's leader can use the keystone while inside of a Mythic Plus capable dungeon.
 
 ### Timer
 
-Each M+ level will have a time limit to beat. If the group beats the timer, then rewards will be given (check **MythicPlus::CreateMythicLevels()** and you can modify the rewards or levels to your liking). If timer is not beat, then no rewards will be given, but group can still try to finish the dungeon.
-As soon as the group's leader uses a Mythic Keystone, 10 seconds will pass and the dungeon will become Mythic Plus. The dungeon timer will start as soon as the dungeon becomes Mythic Plus.
+Each M+ level will have a time limit to beat. If the group beats the timer, then rewards will be given. If timer is not beat, then no rewards will be given, but group can still try to finish the dungeon.
+As soon as the group's leader uses a Mythic Keystone, 10 seconds will pass and the dungeon will become Mythic Plus. The dungeon timer will start as soon as the dungeon becomes Mythic Plus. Whenever a Mythic Plus dungeon is completed and timer is beat, each player in the group will receive a Mythic Keystone (configurable).
 
 ### M+ dungeons tracking
 

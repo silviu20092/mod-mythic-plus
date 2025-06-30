@@ -15,6 +15,8 @@ MythicPlus::MythicPlus()
 {
     enabled = true;
     penaltyOnDeath = 15;
+    keystoneBuyTimer = 1440;
+    dropKeystoneOnCompletion = true;
     CreateMythicPlusDungeons();
 }
 
@@ -197,6 +199,7 @@ void MythicPlus::LoadFromDB()
     CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
     trans->Append("DELETE FROM `mythic_plus_dungeon` WHERE `id` NOT IN (SELECT `id` FROM `instance`)");
     trans->Append("DELETE FROM `mythic_plus_char_level` WHERE `guid` NOT IN (SELECT `guid` FROM `characters`)");
+    trans->Append("DELETE FROM `mythic_plus_keystone_timer` WHERE `guid` NOT IN (SELECT `guid` FROM `characters`)");
     CharacterDatabase.DirectCommitTransaction(trans);
 
     WorldDatabaseTransaction wtrans = WorldDatabase.BeginTransaction();
@@ -206,6 +209,7 @@ void MythicPlus::LoadFromDB()
 
     LoadMythicPlusDungeonsFromDB();
     LoadMythicPlusCharLevelsFromDB();
+    LoadMythicPlusKeystoneTimersFromDB();
     LoadIgnoredEntriesForMultiplyAffixFromDB();
 
     LoadMythicAffixFromDB();
@@ -344,6 +348,25 @@ void MythicPlus::LoadMythicPlusCharLevelsFromDB()
         uint32 mythiclevel = fields[1].Get<uint32>();
 
         charMythicLevels[guid] = mythiclevel;
+    } while (result->NextRow());
+}
+
+void MythicPlus::LoadMythicPlusKeystoneTimersFromDB()
+{
+    charKeystoneBuyTimers.clear();
+
+    QueryResult result = CharacterDatabase.Query("SELECT guid, buytime FROM mythic_plus_keystone_timer");
+    if (!result)
+        return;
+
+    do
+    {
+        Field* fields = result->Fetch();
+
+        uint32 guid = fields[0].Get<uint32>();
+        uint64 buytime = fields[1].Get<uint64>();
+
+        charKeystoneBuyTimers[guid] = buytime;
     } while (result->NextRow());
 }
 
@@ -662,6 +685,8 @@ void MythicPlus::Reward(Player* player, const MythicReward& reward) const
 
     for (auto& token : reward.tokens)
         player->AddItem(token.first, token.second);
+
+    RewardKeystone(player);
 }
 
 void MythicPlus::RemoveDungeonInfo(uint32 instanceId)
@@ -831,6 +856,8 @@ void MythicPlus::ProcessConfig(bool reload)
         enabled = sConfigMgr->GetOption<bool>("MythicPlus.Enable", true);
 
     penaltyOnDeath = sConfigMgr->GetOption<uint32>("MythicPlus.Penalty.OnDeath", 15);
+    keystoneBuyTimer = sConfigMgr->GetOption<uint32>("MythicPlus.KeystoneBuyTimer", 1440);
+    dropKeystoneOnCompletion = sConfigMgr->GetOption<bool>("MythicPlus.DropKeystoneOnDungeonComplete", true);
 }
 
 bool MythicPlus::MatchMythicPlusMapDiff(const Map* map) const
@@ -856,12 +883,46 @@ bool MythicPlus::IsCreatureIgnoredForMultiplyAffix(uint32 entry) const
     return ignoredEntriesForMultiplyAffix.find(entry) != ignoredEntriesForMultiplyAffix.end();
 }
 
-bool MythicPlus::GiveKeystone(Player* player) const
+bool MythicPlus::GiveKeystone(Player* player)
 {
-    return player->AddItem(KEYSTONE_ENTRY, 1);
+    uint64 now = Utils::GameTimeCount();
+    if (keystoneBuyTimer > 0)
+    {
+        uint64 lastBuyTime = charKeystoneBuyTimers[Utils::PlayerGUID(player)];
+        if (lastBuyTime > 0)
+        {
+            uint64 diff = now - lastBuyTime;
+            if (diff < keystoneBuyTimer * 60)
+            {
+                std::ostringstream oss;
+                oss << "You can buy another Mythic Kyestone in ";
+                oss << secsToTimeString(keystoneBuyTimer * 60 - diff);
+                BroadcastToPlayer(player, oss.str());
+                return false;
+            }
+        }
+    }
+    if (!player->AddItem(KEYSTONE_ENTRY, 1))
+    {
+        BroadcastToPlayer(player, "Can't add Mythic Keystone. Check your inventory.");
+        return false;
+    }
+
+    charKeystoneBuyTimers[Utils::PlayerGUID(player)] = now;
+    CharacterDatabase.Execute("REPLACE INTO mythic_plus_keystone_timer (guid, buytime) VALUES ({}, {})", Utils::PlayerGUID(player), now);
+
+    return true;
 }
 
 void MythicPlus::RemoveKeystone(Player* player) const
 {
     player->DestroyItemCount(KEYSTONE_ENTRY, 1, true);
+}
+
+void MythicPlus::RewardKeystone(Player* player) const
+{
+    if (!dropKeystoneOnCompletion)
+        return;
+
+    player->AddItem(KEYSTONE_ENTRY, 1);
 }

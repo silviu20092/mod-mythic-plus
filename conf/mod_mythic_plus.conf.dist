@@ -25,3 +25,22 @@ MythicPlus.Enable = 1
 #
 
 MythicPlus.Penalty.OnDeath = 15
+
+#
+#    MythicPlus.KeystoneBuyTimer
+#        Description: Limits the buying of Mythic Keystones from the NPC. This value is in minutes.
+#        Values:      0    - no limit, players can buy the keystone whenever they want
+#                     60   - players can buy a keystone once every 60 minutes
+#        Default:     1440 - can buy the keystone once per day
+#
+
+MythicPlus.KeystoneBuyTimer = 1440
+
+#
+#    MythicPlus.DropKeystoneOnDungeonComplete
+#        Description: Drops a Mythic Keystone for each player when the M+ dungeon was completed (players must beat the timer though)
+#        Values: 0 or 1
+#        Default: 1 - drop the keystone
+#
+
+MythicPlus.DropKeystoneOnDungeonComplete = 1

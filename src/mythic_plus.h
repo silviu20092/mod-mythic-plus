@@ -228,8 +228,16 @@ public:
     {
         return penaltyOnDeath;
     }
-    bool GiveKeystone(Player* player) const;
+    bool GiveKeystone(Player* player);
     void RemoveKeystone(Player* player) const;
+    uint32 GetKeystoneBuyTimer() const
+    {
+        return keystoneBuyTimer;
+    }
+    bool GetDropKeystoneOnCompletion() const
+    {
+        return dropKeystoneOnCompletion;
+    }
 private:
     std::unordered_map<uint32, Difficulty> mythicPlusDungeons;
     std::unordered_map<uint32, MythicPlusDungeonInfo> mythicPlusDungeonInfo;
@@ -237,6 +245,8 @@ private:
     bool enabled;
     std::set<uint32> ignoredEntriesForMultiplyAffix;
     uint32 penaltyOnDeath;
+    uint32 keystoneBuyTimer;
+    bool dropKeystoneOnCompletion;
 
     MythicLevelContainer mythicLevels;
 
@@ -247,18 +257,21 @@ private:
 
     std::unordered_map<uint32, std::vector<DBAffix>> affixesFromDB;
     std::unordered_map<uint32, std::vector<DBReward>> rewardsFromDB;
+    std::unordered_map<uint32, uint64> charKeystoneBuyTimers;
 
     void CreateMythicPlusDungeons();
     bool IsAllowedMythicPlusDungeon(uint32 mapId) const;
     ObjectGuid GetLeaderGuid(const Player* player) const;
     void LoadMythicPlusDungeonsFromDB();
     void LoadMythicPlusCharLevelsFromDB();
+    void LoadMythicPlusKeystoneTimersFromDB();
     void LoadIgnoredEntriesForMultiplyAffixFromDB();
     void MythicPlusSnapshotsDBCallback(QueryResult result);
     void SortSnapshots(std::vector<std::pair<std::pair<uint32, uint64>, std::vector<MythicPlusDungeonSnapshot>>>& snapshots);
     void LoadMythicAffixFromDB();
     void LoadMythicRewardsFromDB();
     void LoadMythicLevelsFromDB();
+    void RewardKeystone(Player* player) const;
 };
 
 #define sMythicPlus MythicPlus::instance()
