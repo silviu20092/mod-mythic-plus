@@ -5,6 +5,7 @@
 #ifndef _MYTHIC_PLUS_H_
 #define _MYTHIC_PLUS_H_
 
+#include <random>
 #include "Player.h"
 
 class MythicAffix;
@@ -23,6 +24,7 @@ struct MythicLevel
     std::vector<MythicAffix*> affixes;
     uint32 timeLimit;
     MythicReward reward;
+    uint32 randomAffixCount;
 };
 typedef std::vector<MythicLevel> MythicLevelContainer;
 
@@ -111,6 +113,7 @@ public:
         uint32 penaltyOnDeath;
         uint32 deaths;
         uint32 totalDeaths;
+        uint32 randomAffixCount;
     };
 
     class Utils
@@ -134,6 +137,7 @@ public:
         static std::string DateFromSeconds(uint64 seconds);
         static bool IsGroupLeader(const Player* player);
         static long long GameTimeCount();
+        static std::mt19937_64 RandomEngine();
     };
 
     struct DBAffix
@@ -186,7 +190,8 @@ public:
     void SaveDungeonInfo(uint32 instanceId, uint32 mapId, uint32 timeLimit, uint64 startTime, uint32 mythicLevel, uint32 penaltyOnDeath, uint32 deaths, bool done, bool isMythic = true);
     void AddDungeonSnapshot(uint32 instanceId, uint32 mapId, Difficulty mapDiff, uint64 startTime,
         uint64 snapTime, uint32 combatTime, uint32 timelimit, uint32 charGuid, std::string charName,
-        uint32 mythicLevel, uint32 creatureEntry, bool isFinalBoss, bool rewarded, uint32 penaltyOnDeath, uint32 deaths);
+        uint32 mythicLevel, uint32 creatureEntry, bool isFinalBoss, bool rewarded, uint32 penaltyOnDeath, uint32 deaths,
+        uint32 randomAffixCount);
     bool IsFinalBoss(uint32 entry) const;
     void Reward(Player* player, const MythicReward& reward) const;
     void RemoveDungeonInfo(uint32 instanceId);

@@ -16,6 +16,8 @@ public:
     void AddMythicPlusSnapshotAllRuns(Player* player, Creature* creature, uint32 mapEntry);
     void AddMythicPlusAllLevels(Player* player, Creature* creature);
     void AddMythicPlusDungeonSnapshotDetails(Player* player, Creature* creature, uint32 internalId);
+    void AddRandomAfixes(Player* player, Creature* creature);
+    void AddRandomAffixesForLevel(Player* player, Creature* creature, uint32 level);
     bool TakePagedDataAction(Player* player, Creature* creature, uint32 action) override;
     bool OnGossipSelect(Player* player, Creature* creature, uint32 sender, uint32 action) override;
 private:
@@ -27,6 +29,7 @@ private:
         uint32 mapEntry = 0;
         uint32 snapMythicLevel = 0;
         uint32 internalId = 0;
+        uint32 randomMythicLevel = 0;
     };
 protected:
     uint32 _PageZeroSender(const PagedData& pagedData) const override;

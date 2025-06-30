@@ -4,6 +4,8 @@
 
 #include <iomanip>
 #include "Creature.h"
+#include "CellImpl.h"
+#include "GridNotifiers.h"
 #include "mythic_plus.h"
 #include "mythic_affix.h"
 
@@ -34,9 +36,36 @@
             return new RandomlyExplodeAffix();
         case AFFIX_TYPE_LIGHTNING_SPHERE:
             return new LightningSphereAffix((uint32)val1, val2);
+        case AFFIX_TYPE_RANDOM_ENEMY_ENRAGE:
+            return new EnemyEnrageAffix();
+        case AFFIX_TYPE_RANDOM_ENTANGLING_ROOTS:
+            return new EntanglingRootsAffix();
         default:
             return nullptr;
     }
+}
+
+/*static*/ MythicAffix* MythicAffix::AffixFactory(MythicAffixType type)
+{
+    return AffixFactory(type, 0.0f, 0.0f);
+}
+
+/*static*/ std::vector<MythicAffix*> MythicAffix::GenerateRandom(uint32 maxCount)
+{
+    std::vector<MythicAffix*> res;
+    if (maxCount > RANDOM_AFFIX_MAX_COUNT)
+        return res;
+
+    std::vector<uint32> chosen;
+    std::ranges::sample(RandomAffixes, std::back_inserter(chosen), maxCount, MythicPlus::Utils::RandomEngine());
+    for (auto affixType : chosen)
+    {
+        MythicAffix* affix = AffixFactory((MythicAffixType)affixType);
+        ASSERT(affix);
+        res.push_back(affix);
+    }
+
+    return res;
 }
 
 bool HealthIncreaseAffix::CanApplyHealthIncrease(Creature* creature) const
@@ -234,4 +263,107 @@ std::string LightningSphereAffix::ToString() const
     oss << secsToTimeString(spawnTimerEnd / 1000);
     oss << "]";
     return oss.str();
+}
+
+void EnemyEnrageAffix::HandlePeriodicEffect(Unit* unit, uint32 diff)
+{
+    if (!unit)
+        return;
+
+    if (!sMythicPlus->IsInMythicPlus(unit))
+        return;
+
+    if (!unit->ToCreature())
+        return;
+
+    Creature* creature = unit->ToCreature();
+    if (creature->GetEntry() == MythicPlus::NPC_LIGHTNING_SPHERE)
+        return;
+
+    if (!IsCreatureProcessed(creature))
+        return;
+
+    if (!creature->IsInCombat())
+        return;
+
+    if (!creature->GetVictim() || !creature->GetVictim()->ToPlayer())
+        return;
+
+    uint32& lastTimer = timerMap[creature->GetGUID().GetCounter()];
+    if (lastTimer >= checkAtTimer)
+    {
+        if (roll_chance_f(chance))
+        {
+            if (!creature->HasAura(ENRAGE_SPELL_ID))
+                creature->CastSpell(creature, ENRAGE_SPELL_ID, true);
+        }
+        lastTimer = 0;
+    }
+    else
+        lastTimer += diff;
+}
+
+std::string EnemyEnrageAffix::ToString() const
+{
+    return "Enemies (including bosses) can randomly enrage while in combat";
+}
+
+void EntanglingRootsAffix::HandlePeriodicEffect(Unit* unit, uint32 diff)
+{
+    if (!unit)
+        return;
+
+    if (!sMythicPlus->IsInMythicPlus(unit))
+        return;
+
+    if (!unit->ToPlayer())
+        return;
+
+    if (unit->isDead())
+        return;
+
+    MythicPlus::MapData* mapData = sMythicPlus->GetMapData(unit->GetMap(), false);
+    ASSERT(mapData != nullptr);
+
+    if (mapData->done)
+        return;
+
+    Player* player = unit->ToPlayer();
+
+    uint32& lastTimer = timerMap[MythicPlus::Utils::PlayerGUID(player)];
+    if (lastTimer >= checkAtTimer)
+    {
+        if (roll_chance_f(chance))
+        {
+            if (!player->HasAura(ENTANGLING_ROOTS_SPELL_ID))
+            {
+                static float srange = 100.0f;
+                std::list<Unit*> targets;
+                Acore::AnyUnfriendlyUnitInObjectRangeCheck u_check(player, player, srange);
+                Acore::UnitListSearcher<Acore::AnyUnfriendlyUnitInObjectRangeCheck> searcher(player, targets, u_check);
+                Cell::VisitAllObjects(player, searcher, srange);
+
+                if (!targets.empty())
+                {
+                    auto foundUnitItr = Acore::Containers::SelectRandomContainerElementIf(targets, [&](const Unit* unit) -> bool
+                    {
+                        return unit->IsAlive()
+                            && unit->GetLevel() >= player->GetLevel() // skip level 1 stuff from instances for example
+                            && unit->IsWithinLOSInMap(player)
+                            && unit->IsValidAttackTarget(player);
+                    });
+                    if (foundUnitItr != targets.end())
+                        (*foundUnitItr)->CastSpell(player, ENTANGLING_ROOTS_SPELL_ID, true);
+                }
+            }
+        }
+        lastTimer = 0;
+    }
+    else
+        lastTimer += diff;
+}
+
+std::string EntanglingRootsAffix::ToString() const
+{
+    return "Nearby enemies can cast entangling roots on players, freezing them in place and dealing damage";
 }

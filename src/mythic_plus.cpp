@@ -255,10 +255,10 @@ void MythicPlus::SaveDungeonInfo(uint32 instanceId, uint32 mapId, uint32 timeLim
 
 void MythicPlus::AddDungeonSnapshot(uint32 instanceId, uint32 mapId, Difficulty mapDiff, uint64 startTime,
     uint64 snapTime, uint32 combatTime, uint32 timelimit, uint32 charGuid, std::string charName,
-    uint32 mythicLevel, uint32 creatureEntry, bool isFinalBoss, bool rewarded, uint32 penaltyOnDeath, uint32 deaths)
+    uint32 mythicLevel, uint32 creatureEntry, bool isFinalBoss, bool rewarded, uint32 penaltyOnDeath, uint32 deaths, uint32 randomAffixCount)
 {
-    CharacterDatabase.Execute("INSERT INTO mythic_plus_dungeon_snapshot (id, map, mapdifficulty, starttime, snaptime, combattime, timelimit, char_guid, char_name, mythiclevel, creature_entry, creature_final_boss, rewarded, penalty_on_death, deaths) VALUES "
-        "({}, {}, {}, {}, {}, {}, {}, {}, \"{}\", {}, {}, {}, {}, {}, {})", instanceId, mapId, mapDiff, startTime, snapTime, combatTime, timelimit, charGuid, charName, mythicLevel, creatureEntry, isFinalBoss, rewarded, penaltyOnDeath, deaths);
+    CharacterDatabase.Execute("INSERT INTO mythic_plus_dungeon_snapshot (id, map, mapdifficulty, starttime, snaptime, combattime, timelimit, char_guid, char_name, mythiclevel, creature_entry, creature_final_boss, rewarded, penalty_on_death, deaths, random_affix_count) VALUES "
+        "({}, {}, {}, {}, {}, {}, {}, {}, \"{}\", {}, {}, {}, {}, {}, {}, {})", instanceId, mapId, mapDiff, startTime, snapTime, combatTime, timelimit, charGuid, charName, mythicLevel, creatureEntry, isFinalBoss, rewarded, penaltyOnDeath, deaths, randomAffixCount);
 }
 
 void MythicPlus::CreateMythicPlusDungeons()
@@ -404,7 +404,8 @@ void MythicPlus::LoadMythicPlusSnapshotsFromDB()
             "mpds.mapdifficulty, "
             "mpds.timelimit, "
             "max(mpds.penalty_on_death) penalty_on_death, "
-            "max(mpds.deaths) deaths "
+            "max(mpds.deaths) deaths, "
+            "max(random_affix_count) random_affix_count "
         "from mythic_plus_dungeon_snapshot mpds "
         "group by mpds.id, mpds.map, mpds.mapdifficulty, mpds.starttime, mpds.timelimit, mpds.snaptime, mpds.creature_entry";
     _queryProcessor.AddCallback(CharacterDatabase.AsyncQuery(query).WithCallback(std::bind(&MythicPlus::MythicPlusSnapshotsDBCallback, this, std::placeholders::_1)));
@@ -462,7 +463,7 @@ void MythicPlus::LoadMythicLevelsFromDB()
 {
     mythicLevels.clear();
 
-    QueryResult result = WorldDatabase.Query("SELECT lvl, timelimit FROM mythic_plus_level order by lvl");
+    QueryResult result = WorldDatabase.Query("SELECT lvl, timelimit, random_affix_count FROM mythic_plus_level order by lvl");
     if (!result)
         return;
 
@@ -471,10 +472,12 @@ void MythicPlus::LoadMythicLevelsFromDB()
         Field* fields = result->Fetch();
         uint32 lvl = fields[0].Get<uint32>();
         uint32 timeLimit = fields[1].Get<uint32>();
+        uint32 randomAffixCount = fields[2].Get<uint32>();
 
         MythicLevel level;
         level.level = lvl;
         level.timeLimit = timeLimit;
+        level.randomAffixCount = randomAffixCount;
 
         if (rewardsFromDB.find(lvl) != rewardsFromDB.end())
         {
@@ -494,9 +497,17 @@ void MythicPlus::LoadMythicLevelsFromDB()
             for (const auto& a : affixes)
             {
                 MythicAffix* affix = MythicAffix::AffixFactory((MythicAffixType)a.affixType, a.val1, a.val2);
-                if (affix != nullptr)
+                if (affix != nullptr && !affix->IsRandom())
                     level.affixes.push_back(affix);
             }
+        }
+
+        if (randomAffixCount > 0)
+        {
+            std::vector<MythicAffix*> randomAffixes = MythicAffix::GenerateRandom(randomAffixCount);
+            ASSERT(randomAffixes.size() == randomAffixCount);
+            for (auto* a : randomAffixes)
+                level.affixes.push_back(a);
         }
 
         mythicLevels.push_back(level);
@@ -657,6 +668,12 @@ void MythicPlus::LoadMythicLevelsFromDB()
     return GameTime::GetGameTime().count();
 }
 
+/*static*/ std::mt19937_64 MythicPlus::Utils::RandomEngine()
+{
+    static std::mt19937_64 random_engine{ std::random_device{}() };
+    return random_engine;
+}
+
 bool MythicPlus::IsFinalBoss(uint32 entry) const
 {
     return entry == 36502       // Forge of Souls
@@ -770,6 +787,7 @@ void MythicPlus::MythicPlusSnapshotsDBCallback(QueryResult result)
         snapshot.timelimit = fields[11].Get<uint32>();
         snapshot.penaltyOnDeath = fields[12].Get<uint32>();
         snapshot.deaths = fields[13].Get<uint32>();
+        snapshot.randomAffixCount = fields[14].Get<uint32>();
         mapSnapshots[snapshot.mapId][std::make_pair(snapshot.id, snapshot.startTime)].push_back(snapshot);
     } while (result->NextRow());
 

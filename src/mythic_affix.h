@@ -17,6 +17,8 @@ enum MythicAffixType
     AFFIX_TYPE_MORE_CREATURE_DAMAGE,
     AFFIX_TYPE_RANDOMLY_EXPLODE,
     AFFIX_TYPE_LIGHTNING_SPHERE,
+    AFFIX_TYPE_RANDOM_ENEMY_ENRAGE,
+    AFFIX_TYPE_RANDOM_ENTANGLING_ROOTS,
     MAX_AFFIX_TYPE
 };
 
@@ -31,9 +33,19 @@ public:
     virtual void HandlePeriodicEffect(Unit* unit, uint32 diff) {}
     virtual void HandlePeriodicEffectMap(Map* map, uint32 diff) {}
 
+    virtual bool IsRandom() const
+    {
+        return false;
+    }
+
     static MythicAffix* AffixFactory(MythicAffixType type, float val1, float val2);
+    static MythicAffix* AffixFactory(MythicAffixType type);
+    static std::vector<MythicAffix*> GenerateRandom(uint32 maxCount);
 protected:
     static bool IsCreatureProcessed(Creature* creature);
+public:
+    static constexpr uint32 RANDOM_AFFIX_MAX_COUNT = 2;
+    static constexpr uint32 RandomAffixes[RANDOM_AFFIX_MAX_COUNT] = { AFFIX_TYPE_RANDOM_ENEMY_ENRAGE, AFFIX_TYPE_RANDOM_ENTANGLING_ROOTS };
 };
 
 class HealthIncreaseAffix : public MythicAffix
@@ -167,6 +179,56 @@ public:
     }
 
     void HandlePeriodicEffectMap(Map* map, uint32 diff) override;
+    std::string ToString() const override;
+};
+
+class EnemyEnrageAffix : public MythicAffix
+{
+private:
+    static constexpr float chance = 6.5f;
+    static constexpr uint32 ENRAGE_SPELL_ID = 55285;
+    static constexpr uint32 checkAtTimer = 2000;
+
+    std::unordered_map<uint32, uint32> timerMap;
+public:
+    EnemyEnrageAffix() {}
+
+    MythicAffixType GetAffixType() const override
+    {
+        return AFFIX_TYPE_RANDOM_ENEMY_ENRAGE;
+    }
+
+    bool IsRandom() const override
+    {
+        return true;
+    }
+
+    void HandlePeriodicEffect(Unit* unit, uint32 diff) override;
+    std::string ToString() const override;
+};
+
+class EntanglingRootsAffix : public MythicAffix
+{
+private:
+    static constexpr float chance = 5.33f;
+    static constexpr uint32 ENTANGLING_ROOTS_SPELL_ID = 57095;
+    static constexpr uint32 checkAtTimer = 20000;
+
+    std::unordered_map<uint32, uint32> timerMap;
+public:
+    EntanglingRootsAffix() {}
+
+    MythicAffixType GetAffixType() const override
+    {
+        return AFFIX_TYPE_RANDOM_ENTANGLING_ROOTS;
+    }
+
+    bool IsRandom() const override
+    {
+        return true;
+    }
+
+    void HandlePeriodicEffect(Unit* unit, uint32 diff) override;
     std::string ToString() const override;
 };
 

@@ -113,6 +113,9 @@ public:
                         sMythicPlus->SaveDungeonInfo(map->GetInstanceId(), map->GetId(), mapData->timeLimit, mapData->mythicPlusStartTimer, mapData->mythicLevel->level, mapData->penaltyOnDeath, mapData->deaths, true);
                     }
 
+                    const MythicLevel* mythicLevel = sMythicPlus->GetMythicLevel(savedDungeon->mythicLevel);
+                    ASSERT(mythicLevel);
+
                     sMythicPlus->AddDungeonSnapshot(map->GetInstanceId(),
                         map->GetId(),
                         map->GetDifficulty(),
@@ -127,7 +130,8 @@ public:
                         finalBoss,
                         rewarded,
                         mapData->penaltyOnDeath,
-                        mapData->deaths
+                        mapData->deaths,
+                        mythicLevel->randomAffixCount
                     );
                 }
             }

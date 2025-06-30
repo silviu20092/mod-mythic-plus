@@ -44,16 +44,21 @@ The system features complex tracking of players that complete M+ dungeons. Each 
 
 ### Adding new Mythic Plus levels
 
-You can easily add or customize levels (currently only 5 were added).
-To add a new level, simply insert a line into **mythic_plus_level** (world database). The fields should be self-explanatory, **timelimit** is expressed in seconds and represents dungeon's time limit (players will try to beat this timer to get loot).
+You can easily add or customize levels.
+To add a new level, simply insert a line into **mythic_plus_level** (world database). The fields should be self-explanatory, **timelimit** is expressed in seconds and represents dungeon's time limit (players will try to beat this timer to get loot). **random_affix_count** is the number of random affixes (see section below) that will be set for this specific level.
 Now you can add the rewards, simply insert lines in **mythic_plus_level_rewards**. mythic_plus_level_rewards.lvl links this table with **mythic_plus_level** table. **rewardtype** can either be 0 (in which case **val1** represents the amount of money (copper) that players will get) or 1 (**val1** now is the item entry and **val2** is the amount of items)
 To add affixes to a M+ level, insert lines in **mythic_plus_affix**. For **affixtype**, see **enum MythicAffixType** from mythic_affix.h. For **val1**, this represents the specific value for each affix (for example, in case of **AFFIX_TYPE_MORE_CREATURE_DAMAGE** this represents the damage increase percent)
+
+### Random affixes
+
+You can set a random affix count for specific levels (**mythic_plus_level.random_affix_count**). Put 0 if you don't want any random affix. Each time the server is restarted, the mythic level will receive **random_affix_count** random affixes from a predefined pool of random affixes.
 
 ## Some photos
 
 ![pic1](https://github.com/silviu20092/mod-mythic-plus/blob/master/pics/pic1.png?raw=true)
 ![pic2](https://github.com/silviu20092/mod-mythic-plus/blob/master/pics/pic2.png?raw=true)
 ![pic3](https://github.com/silviu20092/mod-mythic-plus/blob/master/pics/pic3.png?raw=true)
+![pic4](https://github.com/silviu20092/mod-mythic-plus/blob/master/pics/pic4.png?raw=true)
 
 ## Credits
 - silviu20092

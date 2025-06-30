@@ -110,8 +110,14 @@ void MythicPlusNpcSupport::AddMainMenu(Player* player, Creature* creature)
     keystoneIdnt->optionIcon = GOSSIP_ICON_MONEY_BAG;
     pagedData.data.push_back(keystoneIdnt);
 
+    Identifier* randomMythicIdnt = new Identifier();
+    randomMythicIdnt->id = 9;
+    randomMythicIdnt->uiName = "See the list of possible random affixes -->";
+    randomMythicIdnt->optionIcon = GOSSIP_ICON_BATTLE;
+    pagedData.data.push_back(randomMythicIdnt);
+
     Identifier* bye = new Identifier();
-    bye->id = 9;
+    bye->id = 10;
     bye->uiName = "Nevermind...";
     pagedData.data.push_back(bye);
 
@@ -132,7 +138,10 @@ void MythicPlusNpcSupport::AddMythicPlusLevels(Player* player, Creature* creatur
         idnt->optionIcon = GOSSIP_ICON_BATTLE;
         std::ostringstream oss;
         oss << "Mythic level " << mlevel.level;
-        oss << " (" << mlevel.affixes.size() << " affix(es)) -->";
+        oss << " (" << mlevel.affixes.size() << " affix(es))";
+        if (mlevel.randomAffixCount > 0)
+            oss << " (" << mlevel.randomAffixCount << " random affix(es))";
+        oss << " -->";
         idnt->uiName = oss.str();
         pagedData.data.push_back(idnt);
     }
@@ -152,7 +161,7 @@ void MythicPlusNpcSupport::AddMythicPlusLevelInfo(Player* player, Creature* crea
     Identifier* idnt = new Identifier();
     idnt->id = ++id;
     idnt->optionIcon = GOSSIP_ICON_BATTLE;
-    idnt->uiName = "Click to choose Mythic Level " + Acore::ToString(mythicLevel);
+    idnt->uiName = MythicPlus::Utils::Colored("Click to choose Mythic Level " + Acore::ToString(mythicLevel), "0a4a0e");
     pagedData.data.push_back(idnt);
 
     const MythicLevel* level = sMythicPlus->GetMythicLevel(mythicLevel);
@@ -165,12 +174,16 @@ void MythicPlusNpcSupport::AddMythicPlusLevelInfo(Player* player, Creature* crea
 
     for (int i = 0; i < level->affixes.size(); i++)
     {
+        const MythicAffix* affix = level->affixes.at(i);
+
         Identifier* affixIdnt = new Identifier();
         affixIdnt->id = ++id;
         std::ostringstream oss;
         oss << "Affix ";
         oss << i + 1 << ": ";
-        oss << level->affixes.at(i)->ToString();
+        oss << affix->ToString();
+        if (affix->IsRandom())
+            oss << MythicPlus::Utils::Colored(" [RANDOMLY GENERATED]", "1a0966");
         affixIdnt->uiName = oss.str();
         pagedData.data.push_back(affixIdnt);
     }
@@ -314,6 +327,7 @@ void MythicPlusNpcSupport::AddMythicPlusSnapshotAllRuns(Player* player, Creature
     const std::vector<std::pair<std::pair<uint32, uint64>, std::vector<MythicPlus::MythicPlusDungeonSnapshot>>> snapshots = sMythicPlus->GetMapSnapshot(mapEntry, snapMythicLevel);
     if (!snapshots.empty())
     {
+        uint32 id = 1;
         for (const auto& s : snapshots)
         {
             const MythicPlus::MythicPlusDungeonSnapshot& snap = s.second.at(0);
@@ -322,7 +336,7 @@ void MythicPlusNpcSupport::AddMythicPlusSnapshotAllRuns(Player* player, Creature
             Identifier* idnt = new Identifier();
             idnt->id = internalId + 10;
             std::ostringstream oss;
-            oss << internalId << ". ";
+            oss << id++ << ". ";
             if (snap.totalTime > 0)
             {
                 oss << secsToTimeString(snap.totalTime);
@@ -488,6 +502,9 @@ void MythicPlusNpcSupport::AddMythicPlusDungeonSnapshotDetails(Player* player, C
         oss << MythicPlus::Utils::Colored(s.players, "6e1849");
         oss << "]";
 
+        if (s.randomAffixCount > 0)
+            oss << " [RANDOM AFFIXES: " << s.randomAffixCount << "]";
+
         Identifier* idnt = new Identifier();
         idnt->id = ++id;
         idnt->uiName = oss.str();
@@ -503,6 +520,97 @@ void MythicPlusNpcSupport::AddMythicPlusDungeonSnapshotDetails(Player* player, C
         else
             rewardIdnt->uiName = MythicPlus::Utils::RedColored("NO REWARDS RECEIVED - TIMER LIMIT EXCEEDED");
         pagedData.data.push_back(rewardIdnt);
+    }
+
+    pagedData.SortAndCalculateTotals(CompareIdentifierById);
+}
+
+void MythicPlusNpcSupport::AddRandomAfixes(Player* player, Creature* creature)
+{
+    PagedData& pagedData = GetPagedData(player);
+    pagedData.Reset();
+    pagedData.type = GossipSupport::PAGED_DATA_TYPE_RANDOM_AFFIXES;
+
+    uint32 id = 1;
+
+    Identifier* infoIdnt = new Identifier();
+    infoIdnt->id = id++;
+    infoIdnt->uiName = "Some Mythic levels can have a set number of random affixes that will be chosen from this pool. Random affixes are shuffled with each server restart.";
+    infoIdnt->optionIcon = GOSSIP_ICON_CHAT;
+    pagedData.data.push_back(infoIdnt);
+
+    const MythicLevelContainer& mythicLevels = sMythicPlus->GetAllMythicLevels();
+    for (const auto& mlevel : mythicLevels)
+    {
+        if (mlevel.randomAffixCount > 0)
+        {
+            Identifier* idnt = new Identifier();
+            idnt->id = 100 + mlevel.level;
+            std::ostringstream oss;
+            oss << "Mythic level ";
+            oss << mlevel.level;
+            oss << " has ";
+            oss << mlevel.randomAffixCount << " random affixes set -->";
+            idnt->uiName = oss.str();
+            pagedData.data.push_back(idnt);
+        }
+    }
+
+    Identifier* affixesInfoIdnt = new Identifier();
+    affixesInfoIdnt->id = 1000 + (id++);
+    affixesInfoIdnt->uiName = "Pool of random affixes:";
+    affixesInfoIdnt->optionIcon = GOSSIP_ICON_CHAT;
+    pagedData.data.push_back(affixesInfoIdnt);
+
+    for (uint32 i = 0; i < MythicAffix::RANDOM_AFFIX_MAX_COUNT; i++)
+    {
+        MythicAffix* affix = MythicAffix::AffixFactory((MythicAffixType)MythicAffix::RandomAffixes[i]);
+        ASSERT(affix && affix->IsRandom());
+
+        Identifier* affixIdnt = new Identifier();
+        affixIdnt->id = 1000 + (id++);
+        std::ostringstream aoss;
+        aoss << (i + 1) << ". ";
+        aoss << MythicPlus::Utils::Colored(affix->ToString(), "1a0966");
+        affixIdnt->uiName = aoss.str();
+        pagedData.data.push_back(affixIdnt);
+
+        delete affix;
+    }
+
+    pagedData.SortAndCalculateTotals(CompareIdentifierById);
+}
+
+void MythicPlusNpcSupport::AddRandomAffixesForLevel(Player* player, Creature* creature, uint32 level)
+{
+    PagedData& pagedData = GetPagedData(player);
+    pagedData.Reset();
+    pagedData.type = GossipSupport::PAGED_DATA_TYPE_RANDOM_AFFIXES_FOR_LEVEL;
+    pagedData.GetCustomInfo<MythicPlusNpcPageInfo>()->randomMythicLevel = level;
+
+    uint32 id = 1;
+    Identifier* levelIdnt = new Identifier();
+    levelIdnt->id = id++;
+    levelIdnt->uiName = "Randomly generated affixes for Mythic Level " + Acore::ToString(level);
+    levelIdnt->optionIcon = GOSSIP_ICON_CHAT;
+    pagedData.data.push_back(levelIdnt);
+
+    const MythicLevel* mythicLevel = sMythicPlus->GetMythicLevel(level);
+    ASSERT(mythicLevel);
+
+    uint32 affixIndex = 1;
+    for (const auto* a : mythicLevel->affixes)
+    {
+        if (a->IsRandom())
+        {
+            Identifier* affixIdnt = new Identifier();
+            affixIdnt->id = id++;
+            std::ostringstream aoss;
+            aoss << affixIndex++ << ". ";
+            aoss << MythicPlus::Utils::Colored(a->ToString(), "1a0966");
+            affixIdnt->uiName = aoss.str();
+            pagedData.data.push_back(affixIdnt);
+        }
     }
 
     pagedData.SortAndCalculateTotals(CompareIdentifierById);
@@ -554,6 +662,11 @@ bool MythicPlusNpcSupport::TakePagedDataAction(Player* player, Creature* creatur
                 return OnGossipHello(player, creature);
         }
         else if (action == 9)
+        {
+            AddRandomAfixes(player, creature);
+            return AddPagedData(player, creature, 0);
+        }
+        else if (action == 10)
         {
             CloseGossipMenuFor(player);
             return true;
@@ -624,6 +737,25 @@ bool MythicPlusNpcSupport::TakePagedDataAction(Player* player, Creature* creatur
         AddMythicPlusDungeonSnapshotDetails(player, creature, pagedData.GetCustomInfo<MythicPlusNpcPageInfo>()->internalId);
         return AddPagedData(player, creature, pagedData.currentPage);
     }
+    else if (pagedData.type == GossipSupport::PAGED_DATA_TYPE_RANDOM_AFFIXES)
+    {
+        if (action >= 100 && action <= 1000)
+        {
+            uint32 level = action - 100;
+            AddRandomAffixesForLevel(player, creature, level);
+            return AddPagedData(player, creature, 0);
+        }
+        else
+        {
+            AddRandomAfixes(player, creature);
+            return AddPagedData(player, creature, pagedData.currentPage);
+        }
+    }
+    else if (pagedData.type == GossipSupport::PAGED_DATA_TYPE_RANDOM_AFFIXES_FOR_LEVEL)
+    {
+        AddRandomAffixesForLevel(player, creature, pagedData.GetCustomInfo<MythicPlusNpcPageInfo>()->randomMythicLevel);
+        return AddPagedData(player, creature, pagedData.currentPage);
+    }
 
     return GossipSupport::TakePagedDataAction(player, creature, action);
 }
@@ -637,7 +769,8 @@ uint32 MythicPlusNpcSupport::_PageZeroSender(const PagedData& pagedData) const
 {
     if (pagedData.type == GossipSupport::PAGED_DATA_TYPE_MYTHIC_LEVELS
         || pagedData.type == GossipSupport::PAGED_DATA_TYPE_MYTHIC_DUNGEON_LIST
-        || pagedData.type == GossipSupport::PAGED_DATA_TYPE_MYTHIC_ALL_LEVELS)
+        || pagedData.type == GossipSupport::PAGED_DATA_TYPE_MYTHIC_ALL_LEVELS
+        || pagedData.type == GossipSupport::PAGED_DATA_TYPE_RANDOM_AFFIXES)
         return GOSSIP_SENDER_MAIN;
     else if (pagedData.type == GossipSupport::PAGED_DATA_TYPE_MYTHIC_LEVEL_INFO)
         return GOSSIP_SENDER_MAIN + 9;
@@ -647,6 +780,8 @@ uint32 MythicPlusNpcSupport::_PageZeroSender(const PagedData& pagedData) const
         return GOSSIP_SENDER_MAIN + 11;
     else if (pagedData.type == GossipSupport::PAGED_DATA_TYPE_MYTHIC_DUNGEON_SNAPSHOT_DETAILS)
         return GOSSIP_SENDER_MAIN + 12;
+    else if (pagedData.type == GossipSupport::PAGED_DATA_TYPE_RANDOM_AFFIXES_FOR_LEVEL)
+        return GOSSIP_SENDER_MAIN + 13;
 
     return GOSSIP_SENDER_MAIN;
 }
@@ -674,6 +809,11 @@ bool MythicPlusNpcSupport::OnGossipSelect(Player* player, Creature* creature, ui
     else if (sender == GOSSIP_SENDER_MAIN + 12)
     {
         AddMythicPlusSnapshotAllRuns(player, creature, pagedData.GetCustomInfo<MythicPlusNpcPageInfo>()->mapEntry);
+        return AddPagedData(player, creature, 0);
+    }
+    else if (sender == GOSSIP_SENDER_MAIN + 13)
+    {
+        AddRandomAfixes(player, creature);
         return AddPagedData(player, creature, 0);
     }
 
