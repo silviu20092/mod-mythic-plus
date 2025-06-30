@@ -926,3 +926,11 @@ void MythicPlus::RewardKeystone(Player* player) const
 
     player->AddItem(KEYSTONE_ENTRY, 1);
 }
+
+uint64 MythicPlus::GetKeystoneBuyTimer(const Player* player) const
+{
+    if (charKeystoneBuyTimers.find(Utils::PlayerGUID(player)) != charKeystoneBuyTimers.end())
+        return charKeystoneBuyTimers.at(Utils::PlayerGUID(player));
+
+    return 0;
+}

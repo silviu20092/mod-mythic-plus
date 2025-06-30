@@ -234,6 +234,7 @@ public:
     {
         return keystoneBuyTimer;
     }
+    uint64 GetKeystoneBuyTimer(const Player* player) const;
     bool GetDropKeystoneOnCompletion() const
     {
         return dropKeystoneOnCompletion;

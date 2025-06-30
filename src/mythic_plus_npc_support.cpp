@@ -91,7 +91,22 @@ void MythicPlusNpcSupport::AddMainMenu(Player* player, Creature* creature)
 
     Identifier* keystoneIdnt = new Identifier();
     keystoneIdnt->id = 8;
-    keystoneIdnt->uiName = MythicPlus::Utils::Colored("Acquire Mythic Plus keystone", "700c63");
+    std::ostringstream koss;
+    koss << MythicPlus::Utils::Colored("Acquire Mythic Plus keystone", "700c63");
+    if (sMythicPlus->GetKeystoneBuyTimer() > 0)
+    {
+        uint32 playerKeystoneBuyTimer = sMythicPlus->GetKeystoneBuyTimer(player);
+        std::string available = MythicPlus::Utils::GreenColored(" [AVAILABLE NOW]");
+        if (playerKeystoneBuyTimer > 0)
+        {
+            uint64 now = MythicPlus::Utils::GameTimeCount();
+            uint64 diff = now - playerKeystoneBuyTimer;
+            if (diff < sMythicPlus->GetKeystoneBuyTimer() * 60)
+                available = MythicPlus::Utils::RedColored(" [AVAILABLE IN " + secsToTimeString(sMythicPlus->GetKeystoneBuyTimer() * 60 - diff));
+        }
+        koss << available;
+    }
+    keystoneIdnt->uiName = koss.str();
     keystoneIdnt->optionIcon = GOSSIP_ICON_MONEY_BAG;
     pagedData.data.push_back(keystoneIdnt);
 
@@ -530,9 +545,13 @@ bool MythicPlusNpcSupport::TakePagedDataAction(Player* player, Creature* creatur
         }
         else if (action == 8)
         {
-            sMythicPlus->GiveKeystone(player);
-            CloseGossipMenuFor(player);
-            return true;
+            if (sMythicPlus->GiveKeystone(player))
+            {
+                CloseGossipMenuFor(player);
+                return true;
+            }
+            else
+                return OnGossipHello(player, creature);
         }
         else if (action == 9)
         {
