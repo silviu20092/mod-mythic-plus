@@ -23,13 +23,14 @@ public:
 
     void OnPlayerEnterAll(Map* map, Player* player) override
     {
+        const MythicPlus::MythicPlusDungeonInfo* savedDungeon = sMythicPlus->GetSavedDungeonInfo(map->GetInstanceId());
+
         // edge case when players were in a M+ dungeon, server was restarted and the system was disabled in the meantime
         if (!sMythicPlus->IsEnabled() && map->GetInstanceId() != 0)
         {
-            const MythicPlus::MythicPlusDungeonInfo* dsave = sMythicPlus->GetSavedDungeonInfo(map->GetInstanceId());
-            if (dsave != nullptr)
+            if (savedDungeon != nullptr)
             {
-                if (dsave->mythicLevel > 0)
+                if (savedDungeon->mythicLevel > 0)
                 {
                     MythicPlus::BroadcastToPlayer(player, "Tried to join a saved Mythic Plus instance but now the system is disabled.");
                     MythicPlus::FallbackTeleport(player);
@@ -46,8 +47,6 @@ public:
 
         if (sMythicPlus->CanMapBeMythicPlus(map))
         { 
-            uint32 instanceId = map->GetInstanceId();
-            const MythicPlus::MythicPlusDungeonInfo* savedDungeon = sMythicPlus->GetSavedDungeonInfo(instanceId);
             if (savedDungeon != nullptr)
             {
                 if (!savedDungeon->isMythic)
@@ -64,6 +63,13 @@ public:
 
                 if (mythicLevel == nullptr)
                     return;
+
+                if (player->GetLevel() < DEFAULT_MAX_LEVEL)
+                {
+                    MythicPlus::BroadcastToPlayer(player, "You must be max level in order to join Mythic Plus");
+                    MythicPlus::FallbackTeleport(player);
+                    return;
+                }
 
                 MythicPlus::MapData* mapData = sMythicPlus->GetMapData(map);
                 mapData->mythicPlusStartTimer = savedDungeon->startTime;
@@ -123,6 +129,17 @@ public:
                 else
                     oss << "Joined a Mythic Plus dungeon that is already done.";
                 MythicPlus::AnnounceToPlayer(player, oss.str());
+            }
+        }
+        else
+        {
+            // if there is a saved dungeon for this non M+ dungeon (as mythic+), it means the server was restarted and now the dungeon
+            // is no longer M+ capable
+            if (savedDungeon != nullptr && savedDungeon->isMythic)
+            {
+                MythicPlus::BroadcastToPlayer(player, "This dungeon was saved as Mythic Plus but now it can no longer be Mythic Plus");
+                MythicPlus::FallbackTeleport(player);
+                return;
             }
         }
     }

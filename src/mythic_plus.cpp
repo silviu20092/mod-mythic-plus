@@ -3,6 +3,7 @@
  */
 
 #include <iomanip>
+#include <algorithm>
 #include "AreaDefines.h"
 #include "Chat.h"
 #include "Group.h"
@@ -17,7 +18,6 @@ MythicPlus::MythicPlus()
     penaltyOnDeath = 15;
     keystoneBuyTimer = 1440;
     dropKeystoneOnCompletion = true;
-    CreateMythicPlusDungeons();
 }
 
 MythicPlus::~MythicPlus()
@@ -134,7 +134,8 @@ bool MythicPlus::CanProcessCreature(const Creature* creature) const
     if (!map || !map->IsNonRaidDungeon() || !map->ToInstanceMap())
         return false;
 
-    if (creature->GetLevel() < DEFAULT_MAX_LEVEL)
+    // lets assume that mobs under level 5 should not be touched
+    if (creature->GetLevel() < 5)
         return false;
 
     if ((creature->IsHunterPet() || creature->IsPet() || creature->IsSummon()) && creature->IsControlledByPlayer())
@@ -207,11 +208,12 @@ void MythicPlus::LoadFromDB()
     wtrans->Append("DELETE FROM mythic_plus_affix a WHERE NOT EXISTS (SELECT 1 FROM mythic_plus_level l where l.lvl = a.lvl)");
     WorldDatabase.DirectCommitTransaction(wtrans);
 
+    LoadMythicPlusCapableDungeonsFromDB();
     LoadMythicPlusDungeonsFromDB();
     LoadMythicPlusCharLevelsFromDB();
     LoadMythicPlusKeystoneTimersFromDB();
     LoadIgnoredEntriesForMultiplyAffixFromDB();
-
+    LoadScaleMapFromDB();
     LoadMythicAffixFromDB();
     LoadMythicRewardsFromDB();
     LoadMythicLevelsFromDB();
@@ -261,23 +263,6 @@ void MythicPlus::AddDungeonSnapshot(uint32 instanceId, uint32 mapId, Difficulty 
         "({}, {}, {}, {}, {}, {}, {}, {}, \"{}\", {}, {}, {}, {}, {}, {}, {})", instanceId, mapId, mapDiff, startTime, snapTime, combatTime, timelimit, charGuid, charName, mythicLevel, creatureEntry, isFinalBoss, rewarded, penaltyOnDeath, deaths, randomAffixCount);
 }
 
-void MythicPlus::CreateMythicPlusDungeons()
-{
-    mythicPlusDungeons[MAP_PIT_OF_SARON] = Difficulty::DUNGEON_DIFFICULTY_NORMAL;
-    mythicPlusDungeons[MAP_THE_FORGE_OF_SOULS] = Difficulty::DUNGEON_DIFFICULTY_NORMAL;
-
-    mythicPlusDungeons[MAP_AHN_KAHET_THE_OLD_KINGDOM] = Difficulty::DUNGEON_DIFFICULTY_HEROIC;
-    mythicPlusDungeons[MAP_AZJOL_NERUB] = Difficulty::DUNGEON_DIFFICULTY_HEROIC;
-    mythicPlusDungeons[MAP_DRAK_THARON_KEEP] = Difficulty::DUNGEON_DIFFICULTY_HEROIC;
-    mythicPlusDungeons[MAP_GUNDRAK] = Difficulty::DUNGEON_DIFFICULTY_HEROIC;
-    mythicPlusDungeons[MAP_HALLS_OF_LIGHTNING] = Difficulty::DUNGEON_DIFFICULTY_HEROIC;
-    mythicPlusDungeons[MAP_HALLS_OF_STONE] = Difficulty::DUNGEON_DIFFICULTY_HEROIC;
-    mythicPlusDungeons[MAP_THE_NEXUS] = Difficulty::DUNGEON_DIFFICULTY_HEROIC;
-    mythicPlusDungeons[MAP_THE_OCULUS] = Difficulty::DUNGEON_DIFFICULTY_HEROIC;
-    mythicPlusDungeons[MAP_UTGARDE_KEEP] = Difficulty::DUNGEON_DIFFICULTY_HEROIC;
-    mythicPlusDungeons[MAP_UTGARDE_PINNACLE] = Difficulty::DUNGEON_DIFFICULTY_HEROIC;
-}
-
 bool MythicPlus::IsAllowedMythicPlusDungeon(uint32 mapId) const
 {
     if (!IsEnabled())
@@ -293,6 +278,36 @@ ObjectGuid MythicPlus::GetLeaderGuid(const Player* player) const
         return ObjectGuid::Empty;
 
     return group->GetLeaderGUID();
+}
+
+void MythicPlus::LoadMythicPlusCapableDungeonsFromDB()
+{
+    mythicPlusDungeons.clear();
+
+    QueryResult result = WorldDatabase.Query("SELECT map, mapdifficulty, final_boss_entry FROM mythic_plus_capable_dungeon");
+    if (!result)
+        return;
+
+    do
+    {
+        Field* fields = result->Fetch();
+
+        uint32 mapId = fields[0].Get<uint32>();
+        uint16 diff = fields[1].Get<uint16>();
+        if (diff != DUNGEON_DIFFICULTY_NORMAL && diff != DUNGEON_DIFFICULTY_HEROIC)
+        {
+            LOG_ERROR("sql.sql", "Table `mythic_plus_capable_dungeon` has invalid mapdifficulty '{}', ignoring", diff);
+            continue;
+        }
+        uint32 finalBossEntry = fields[2].Get<uint32>();
+
+        MythicPlusCapableDungeon dungeon;
+        dungeon.map = mapId;
+        dungeon.minDifficulty = (Difficulty)diff;
+        dungeon.finalBossEntry = finalBossEntry;
+
+        mythicPlusDungeons[mapId] = dungeon;
+    } while (result->NextRow());
 }
 
 void MythicPlus::LoadMythicPlusDungeonsFromDB()
@@ -384,6 +399,32 @@ void MythicPlus::LoadIgnoredEntriesForMultiplyAffixFromDB()
         uint32 entry = fields[0].Get<uint32>();
         if (sObjectMgr->GetCreatureTemplate(entry))
             ignoredEntriesForMultiplyAffix.insert(entry);
+    } while (result->NextRow());
+}
+
+void MythicPlus::LoadScaleMapFromDB()
+{
+    scaleMap.clear();
+
+    QueryResult result = WorldDatabase.Query("SELECT map, mapdifficulty, dmg_scale_trash, dmg_scale_boss FROM mythic_plus_map_scale");
+    if (!result)
+        return;
+
+    do
+    {
+        Field* fields = result->Fetch();
+        uint32 map = fields[0].Get<uint32>();
+        uint16 diff = fields[1].Get<uint16>();
+        float dmgScaleTrash = fields[2].Get<float>();
+        float dmgScaleBoss = fields[3].Get<float>();
+
+        MapScale scale;
+        scale.map = map;
+        scale.difficulty = diff;
+        scale.trashDmgScale = dmgScaleTrash;
+        scale.bossDmgScale = dmgScaleBoss;
+
+        scaleMap[map][diff] = scale;
     } while (result->NextRow());
 }
 
@@ -674,20 +715,51 @@ void MythicPlus::LoadMythicLevelsFromDB()
     return random_engine;
 }
 
+/*static*/ bool MythicPlus::Utils::CanBeHeroic(uint32 map)
+{
+    static uint32 heroic[] = {
+        MAP_UTGARDE_KEEP, MAP_UTGARDE_PINNACLE, MAP_THE_NEXUS,
+        MAP_THE_OCULUS, MAP_AZJOL_NERUB, MAP_AHN_KAHET_THE_OLD_KINGDOM,
+        MAP_DRAK_THARON_KEEP, MAP_GUNDRAK, MAP_HALLS_OF_STONE,
+        MAP_HALLS_OF_LIGHTNING, MAP_THE_FORGE_OF_SOULS, MAP_PIT_OF_SARON,
+        MAP_HALLS_OF_REFLECTION, MAP_TRIAL_OF_THE_CHAMPION,
+        MAP_HELLFIRE_CITADEL_RAMPARTS, MAP_HELLFIRE_CITADEL_THE_BLOOD_FURNACE,
+        MAP_HELLFIRE_CITADEL_THE_SHATTERED_HALLS, MAP_COILFANG_THE_SLAVE_PENS,
+        MAP_COILFANG_THE_UNDERBOG, MAP_COILFANG_THE_STEAMVAULT, MAP_AUCHINDOUN_MANA_TOMBS,
+        MAP_AUCHINDOUN_AUCHENAI_CRYPTS, MAP_AUCHINDOUN_SETHEKK_HALLS, MAP_AUCHINDOUN_SHADOW_LABYRINTH,
+        MAP_TEMPEST_KEEP_THE_MECHANAR, MAP_TEMPEST_KEEP_THE_BOTANICA, MAP_TEMPEST_KEEP_THE_ARCATRAZ
+    };
+
+    auto foundHeroic = std::find(std::begin(heroic), std::end(heroic), map);
+    return foundHeroic != std::end(heroic);
+}
+
+/*static*/ float MythicPlus::Utils::HealthMod(int32 Rank)
+{
+    switch (Rank)
+    {
+        case CREATURE_ELITE_NORMAL:
+            return sWorld->getRate(RATE_CREATURE_NORMAL_HP);
+        case CREATURE_ELITE_ELITE:
+            return sWorld->getRate(RATE_CREATURE_ELITE_ELITE_HP);
+        case CREATURE_ELITE_RAREELITE:
+            return sWorld->getRate(RATE_CREATURE_ELITE_RAREELITE_HP);
+        case CREATURE_ELITE_WORLDBOSS:
+            return sWorld->getRate(RATE_CREATURE_ELITE_WORLDBOSS_HP);
+        case CREATURE_ELITE_RARE:
+            return sWorld->getRate(RATE_CREATURE_ELITE_RARE_HP);
+        default:
+            return sWorld->getRate(RATE_CREATURE_ELITE_ELITE_HP);
+    }
+}
+
 bool MythicPlus::IsFinalBoss(uint32 entry) const
 {
-    return entry == 36502       // Forge of Souls
-        || entry == 36658       // Pit of Saron
-        || entry == 29306       // Gundrak
-        || entry == 29311       // Ahn'Kahet
-        || entry == 29120       // Azjol Nerub
-        || entry == 26632       // DrakTharon
-        || entry == 28923       // Halls of Lightning
-        || entry == 27978       // Halls of Stone
-        || entry == 26723       // The Nexus
-        || entry == 27656       // The Oculus
-        || entry == 23954       // Utgarde Keep
-        || entry == 26861;      // Utgarde Pinnacle
+    for (const auto& d : mythicPlusDungeons)
+        if (d.second.finalBossEntry == entry)
+            return true;
+
+    return false;
 }
 
 void MythicReward::AddToken(uint32 entry, uint32 count)
@@ -889,7 +961,7 @@ bool MythicPlus::MatchMythicPlusMapDiff(const Map* map) const
     if (mythicPlusDungeons.find(map->GetId()) != mythicPlusDungeons.end())
     {
         Difficulty mapDiff = map->GetDifficulty();
-        Difficulty dungeonDiff = mythicPlusDungeons.at(map->GetId());
+        Difficulty dungeonDiff = mythicPlusDungeons.at(map->GetId()).minDifficulty;
         return mapDiff >= dungeonDiff;
     }
 
@@ -951,4 +1023,115 @@ uint64 MythicPlus::GetKeystoneBuyTimer(const Player* player) const
         return charKeystoneBuyTimers.at(Utils::PlayerGUID(player));
 
     return 0;
+}
+
+void MythicPlus::ScaleCreature(Creature* creature)
+{
+    // add extra damage multipliers if found
+    CreatureData* creatureData = sMythicPlus->GetCreatureData(creature, false);
+    ASSERT(creatureData);
+
+    bool boss = IsBoss(creature);
+    Map* map = creature->GetMap();
+    const MapScale* mapScale = GetMapScale(map);   
+    if (mapScale != nullptr)
+        creatureData->extraDamageMultiplier = boss ? mapScale->bossDmgScale : mapScale->trashDmgScale;
+
+    // only scale creatures from lower level dungeons
+    if (creature->GetLevel() >= DEFAULT_MAX_LEVEL)
+        return;
+
+    // assume level 82 for bosses and level [80, 81] for trash mobs
+    uint8 chosenLevel = boss ? 82 : urand(80, 81);
+
+    CreatureTemplate const* cInfo = sObjectMgr->GetCreatureTemplate(creature->GetEntry());
+    ASSERT(cInfo);
+
+    CreatureBaseStats const* stats = sObjectMgr->GetCreatureBaseStats(chosenLevel, cInfo->unit_class);
+    ASSERT(stats);
+
+    creature->SetLevel(chosenLevel);
+
+    uint8 exp = EXPANSION_WRATH_OF_THE_LICH_KING; // all mobs should scale to WOTLK expansion
+    
+    uint32 hpMod = boss ? urand(20, 21) : 4;
+    if (map->IsHeroic())
+        hpMod = boss ? urand(30, 31) : 5;
+
+    // scale health
+    uint32 health = stats->BaseHealth[exp] * hpMod * Utils::HealthMod(cInfo->rank);
+    creature->SetCreateHealth(health);
+    creature->SetMaxHealth(health);
+    creature->SetHealth(health);
+    creature->ResetPlayerDamageReq();
+    creature->SetModifierValue(UNIT_MOD_HEALTH, BASE_VALUE, (float)health);
+
+    // scale mana
+    float manaMod = std::max(1.0f, cInfo->ModMana);
+    uint32 mana = (uint32)std::ceil(stats->BaseMana * manaMod);
+
+    creature->SetCreateMana(mana);
+    creature->SetMaxPower(POWER_MANA, mana);
+    creature->SetPower(POWER_MANA, mana);
+    creature->SetModifierValue(UNIT_MOD_MANA, BASE_VALUE, (float)mana);
+
+    // scale armor
+    float armor = std::ceil(stats->BaseArmor * cInfo->ModArmor);
+    creature->SetModifierValue(UNIT_MOD_ARMOR, BASE_VALUE, armor);
+
+    // scale base damage
+    float basedamage = stats->BaseDamage[exp];
+
+    float weaponBaseMinDamage = basedamage;
+    float weaponBaseMaxDamage = basedamage * 1.5;
+
+    creature->SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, weaponBaseMinDamage);
+    creature->SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, weaponBaseMaxDamage);
+
+    creature->SetBaseWeaponDamage(OFF_ATTACK, MINDAMAGE, weaponBaseMinDamage);
+    creature->SetBaseWeaponDamage(OFF_ATTACK, MAXDAMAGE, weaponBaseMaxDamage);
+
+    creature->SetBaseWeaponDamage(RANGED_ATTACK, MINDAMAGE, weaponBaseMinDamage);
+    creature->SetBaseWeaponDamage(RANGED_ATTACK, MAXDAMAGE, weaponBaseMaxDamage);
+
+    creature->SetModifierValue(UNIT_MOD_ATTACK_POWER, BASE_VALUE, stats->AttackPower);
+    creature->SetModifierValue(UNIT_MOD_ATTACK_POWER_RANGED, BASE_VALUE, stats->RangedAttackPower);
+
+    creature->SetCanModifyStats(true);
+    creature->UpdateAllStats();
+}
+
+bool MythicPlus::IsBoss(Creature* creature) const
+{
+    return creature->IsDungeonBoss() || IsFinalBoss(creature->GetEntry());
+}
+
+const MythicPlus::MapScale* MythicPlus::GetMapScale(const Map* map) const
+{
+    uint32 entry = map->GetId();
+    if (scaleMap.find(entry) != scaleMap.end())
+    {
+        if (scaleMap.at(entry).find(map->GetDifficulty()) != scaleMap.at(entry).end())
+            return &scaleMap.at(entry).at(map->GetDifficulty());
+    }
+
+    return nullptr;
+}
+
+bool MythicPlus::CheckGroupLevelForKeystone(const Player* player) const
+{
+    const Group* group = player->GetGroup();
+    if (group == nullptr)
+        return false;
+
+    for (Group::member_citerator mitr = group->GetMemberSlots().begin(); mitr != group->GetMemberSlots().end(); ++mitr)
+    {
+        Player* member = ObjectAccessor::FindConnectedPlayer(mitr->guid);
+        if (!member)
+            return false;
+        if (member->GetLevel() < DEFAULT_MAX_LEVEL)
+            return false;
+    }
+
+    return true;
 }

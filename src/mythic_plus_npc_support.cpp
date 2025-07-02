@@ -228,13 +228,13 @@ void MythicPlusNpcSupport::AddMythicPlusDungeonList(Player* player, Creature* cr
     pagedData.Reset();
     pagedData.type = GossipSupport::PAGED_DATA_TYPE_MYTHIC_DUNGEON_LIST;
 
-    const std::unordered_map<uint32, Difficulty>& dungeons = sMythicPlus->GetAllMythicPlusDungeons();
+    const std::unordered_map<uint32, MythicPlus::MythicPlusCapableDungeon>& dungeons = sMythicPlus->GetAllMythicPlusDungeons();
     LocaleConstant locale = player->GetSession()->GetSessionDbcLocale();
     uint32 id = 0;
     for (const auto& dpair : dungeons)
     {
         uint32 mapEntry = dpair.first;
-        Difficulty diff = dpair.second;
+        Difficulty diff = dpair.second.minDifficulty;
 
         MapEntry const* map = sMapStore.LookupEntry(mapEntry);
         ASSERT(map);
@@ -245,7 +245,12 @@ void MythicPlusNpcSupport::AddMythicPlusDungeonList(Player* player, Creature* cr
         oss << map->name[locale];
         oss << " [";
         if (diff == DUNGEON_DIFFICULTY_NORMAL)
-            oss << "NORMAL/HEROIC]";
+        {
+            if (MythicPlus::Utils::CanBeHeroic(mapEntry))
+                oss << "NORMAL/HEROIC]";
+            else
+                oss << "NORMAL]";
+        }
         else
             oss << "HEROIC ONLY]";
         idnt->uiName = oss.str();
@@ -274,7 +279,7 @@ void MythicPlusNpcSupport::AddMythicPlusDungeonListForSnapshots(Player* player, 
     mlevelIdnt->optionIcon = GOSSIP_ICON_CHAT;
     pagedData.data.push_back(mlevelIdnt);
 
-    const std::unordered_map<uint32, Difficulty>& dungeons = sMythicPlus->GetAllMythicPlusDungeons();
+    const std::unordered_map<uint32, MythicPlus::MythicPlusCapableDungeon>& dungeons = sMythicPlus->GetAllMythicPlusDungeons();
     LocaleConstant locale = player->GetSession()->GetSessionDbcLocale();
     for (const auto& dpair : dungeons)
     {

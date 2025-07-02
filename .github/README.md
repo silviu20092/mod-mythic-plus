@@ -29,18 +29,8 @@ The system features complex tracking of players that complete M+ dungeons. Each 
 
 ### Dungeons that can become Mythic Plus
 
-1. Pit of Saron (normal/HC)
-2. Forge of Souls (normal/HC)
-3. Ahn'Kahet the Old Kingdom (HC)
-4. Azjol Nerub (HC)
-5. Drak'Tharon Keep (HC)
-6. Gundrak (HC)
-7. Halls of Lightning (HC)
-8. Halls of Stone (HC)
-9. The Nexus (HC)
-10. The Oculus (HC)
-11. Utgarde Keep (HC)
-12. Utgarde Pinnacle (HC)
+Use table **mythic_plus_capable_dungeon** to add dungeons that are capable of becoming Mythic Plus. **map** is the ID of the map (like 70 - Uldaman), **mapdifficulty** is the minimum difficulty that player is required to have in order to join Mythic Plus for this specific map (can be either 0 - Normal or 1 - Heroic, adding 1 means the dungeon can only become Mythic Plus on **heroic** difficulty) and **final_boss_entry** is the entry (from creature_template) of the final boss in the dungeon.
+Adding old dungeons (for example Ragefire Chasm) is possible, and mobs will scale to max level when the dungeon becomes Mythic Plus. For older dungeons the damage scale can be further adjusted using table **mythic_plus_map_scale**, the columns should be self-explanatory.
 
 ### Adding new Mythic Plus levels
 

@@ -211,11 +211,12 @@ class EntanglingRootsAffix : public MythicAffix
 {
 private:
     static constexpr float chance = 15.33f;
-    static constexpr uint32 ENTANGLING_ROOTS_SPELL_ID = 57095;
     static constexpr uint32 checkAtTimer = 10000;
 
     std::unordered_map<uint32, uint32> timerMap;
 public:
+    static constexpr uint32 ENTANGLING_ROOTS_SPELL_ID = 57095;
+
     EntanglingRootsAffix() {}
 
     MythicAffixType GetAffixType() const override

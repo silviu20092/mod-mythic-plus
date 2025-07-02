@@ -197,6 +197,16 @@ public:
 class mythic_plus_damage_affix_unitscript : public UnitScript
 {
 private:
+    void HandleScaleDamage(Unit* attacker, uint32& damage)
+    {
+        if (attacker && attacker->ToCreature())
+        {
+            MythicPlus::CreatureData* creatureData = sMythicPlus->GetCreatureData(attacker->ToCreature(), false);
+            if (creatureData != nullptr)
+                damage *= creatureData->extraDamageMultiplier;
+        }
+    }
+
     void HandleDamageEffect(Unit* attacker, Unit* victim, uint32& damage)
     {
         if (attacker && victim && attacker->GetMap() == victim->GetMap())
@@ -207,6 +217,8 @@ private:
             Map* map = attacker->GetMap();
             MythicPlus::MapData* mapData = sMythicPlus->GetMapData(map, false);
             ASSERT(mapData);
+
+            HandleScaleDamage(attacker, damage);
 
             for (auto* affix : mapData->mythicLevel->affixes)
                 affix->HandleOnDamageEffect(attacker, victim, damage);
@@ -242,6 +254,10 @@ public:
     {
         // don't do anything for healing
         if (spellInfo->IsPositive())
+            return;
+
+        // skip entangling roots from affix
+        if (spellInfo->Id == EntanglingRootsAffix::ENTANGLING_ROOTS_SPELL_ID)
             return;
 
         HandleDamageEffect(attacker, target, damage);

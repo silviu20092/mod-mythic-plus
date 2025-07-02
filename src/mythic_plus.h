@@ -70,6 +70,7 @@ public:
         bool processed = false;
         uint64 engageTimer = 0;
         bool copy = false;
+        float extraDamageMultiplier = 1.0f;
     };
 
     enum MythicPlusDungeonEnterState
@@ -138,6 +139,8 @@ public:
         static bool IsGroupLeader(const Player* player);
         static long long GameTimeCount();
         static std::mt19937_64 RandomEngine();
+        static bool CanBeHeroic(uint32 map);
+        static float HealthMod(int32 rank);
     };
 
     struct DBAffix
@@ -160,6 +163,21 @@ public:
         RewardType type;    // 0 - copper (money), 1 - token (item)
         uint32 val1;        // for type = 0 - amount of copper, for type = 1 - the item entry
         uint32 val2;        // for type = 0 - nothing, for type = 1 - item count
+    };
+
+    struct MapScale
+    {
+        uint32 map;
+        uint16 difficulty;
+        float trashDmgScale;
+        float bossDmgScale;
+    };
+
+    struct MythicPlusCapableDungeon
+    {
+        uint32 map;
+        Difficulty minDifficulty;
+        uint32 finalBossEntry;
     };
 public:
     static MythicPlus* instance();
@@ -203,7 +221,7 @@ public:
     uint32 GetCurrentMythicPlusLevelForGUID(uint32 guid) const;
     bool SetCurrentMythicPlusLevel(const Player* player, uint32 mythiclevel, bool force = false);
     uint32 GetCurrentMythicPlusLevelForDungeon(const Player* player) const;
-    const std::unordered_map<uint32, Difficulty>& GetAllMythicPlusDungeons() const
+    const std::unordered_map<uint32, MythicPlusCapableDungeon>& GetAllMythicPlusDungeons() const
     {
         return mythicPlusDungeons;
     }
@@ -244,8 +262,11 @@ public:
     {
         return dropKeystoneOnCompletion;
     }
+    void ScaleCreature(Creature* creature);
+    const MapScale* GetMapScale(const Map* map) const;
+    bool CheckGroupLevelForKeystone(const Player* player) const;
 private:
-    std::unordered_map<uint32, Difficulty> mythicPlusDungeons;
+    std::unordered_map<uint32, MythicPlusCapableDungeon> mythicPlusDungeons;
     std::unordered_map<uint32, MythicPlusDungeonInfo> mythicPlusDungeonInfo;
     std::unordered_map<uint32, uint32> charMythicLevels;
     bool enabled;
@@ -264,20 +285,23 @@ private:
     std::unordered_map<uint32, std::vector<DBAffix>> affixesFromDB;
     std::unordered_map<uint32, std::vector<DBReward>> rewardsFromDB;
     std::unordered_map<uint32, uint64> charKeystoneBuyTimers;
+    std::unordered_map<uint32, std::unordered_map<uint16, MapScale>> scaleMap;
 
-    void CreateMythicPlusDungeons();
     bool IsAllowedMythicPlusDungeon(uint32 mapId) const;
     ObjectGuid GetLeaderGuid(const Player* player) const;
     void LoadMythicPlusDungeonsFromDB();
     void LoadMythicPlusCharLevelsFromDB();
     void LoadMythicPlusKeystoneTimersFromDB();
     void LoadIgnoredEntriesForMultiplyAffixFromDB();
+    void LoadScaleMapFromDB();
     void MythicPlusSnapshotsDBCallback(QueryResult result);
     void SortSnapshots(std::vector<std::pair<std::pair<uint32, uint64>, std::vector<MythicPlusDungeonSnapshot>>>& snapshots);
+    void LoadMythicPlusCapableDungeonsFromDB();
     void LoadMythicAffixFromDB();
     void LoadMythicRewardsFromDB();
     void LoadMythicLevelsFromDB();
     void RewardKeystone(Player* player) const;
+    bool IsBoss(Creature* creature) const;
 };
 
 #define sMythicPlus MythicPlus::instance()

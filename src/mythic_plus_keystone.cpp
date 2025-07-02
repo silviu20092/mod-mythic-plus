@@ -27,7 +27,7 @@ public:
                 {
                     MythicPlus::MapData* mapData = sMythicPlus->GetMapData(map);
                     if (mapData->mythicPlusStartTimer > 0)
-                        MythicPlus::BroadcastToPlayer(player, "Mythic Plus dungeon already in progress.");
+                        MythicPlus::BroadcastToPlayer(player, "Mythic Plus dungeon already in progress or completed.");
                     else if (mapData->keystoneTimer > 0)
                         MythicPlus::BroadcastToPlayer(player, "Keystone was already used, waiting for Mythic Plus to start...");
                     else
@@ -42,16 +42,22 @@ public:
                                 MythicPlus::BroadcastToPlayer(player, "Can't use the Keystone while in combat.");
                             else
                             {
-                                mapData->keystoneTimer = MythicPlus::Utils::GameTimeCount();
-                                mapData->keystoneLevel = sMythicPlus->GetCurrentMythicPlusLevel(player);
-                                std::ostringstream oss;
-                                oss << "Mythic Plus will start in ";
-                                oss << secsToTimeString(MythicPlus::KEYSTONE_START_TIMER / 1000);
-                                oss << ". Mythic level set: ";
-                                oss << Acore::ToString(mapData->keystoneLevel);
-                                MythicPlus::AnnounceToGroup(player, oss.str());
+                                // every player in the group must be online and at max level
+                                if (!sMythicPlus->CheckGroupLevelForKeystone(player))
+                                    MythicPlus::BroadcastToPlayer(player, "All players in the group must be online and at max level.");
+                                else
+                                {
+                                    mapData->keystoneTimer = MythicPlus::Utils::GameTimeCount();
+                                    mapData->keystoneLevel = sMythicPlus->GetCurrentMythicPlusLevel(player);
+                                    std::ostringstream oss;
+                                    oss << "Mythic Plus will start in ";
+                                    oss << secsToTimeString(MythicPlus::KEYSTONE_START_TIMER / 1000);
+                                    oss << ". Mythic level set: ";
+                                    oss << Acore::ToString(mapData->keystoneLevel);
+                                    MythicPlus::AnnounceToGroup(player, oss.str());
 
-                                sMythicPlus->RemoveKeystone(player);
+                                    sMythicPlus->RemoveKeystone(player);
+                                }
                             }
                         }
                     }

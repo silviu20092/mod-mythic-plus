@@ -33,9 +33,11 @@ public:
             MythicPlus::MapData* mapData = sMythicPlus->GetMapData(map);
             if (mapData->mythicLevel)
             {
+                sMythicPlus->ScaleCreature(creature);
                 sMythicPlus->StoreOriginalCreatureData(creature);
+
                 creatureData->processed = true;
-                sMythicPlus->ProcessStaticAffixes(mapData->mythicLevel, creature);
+                sMythicPlus->ProcessStaticAffixes(mapData->mythicLevel, creature);  
             }
         }
     }
