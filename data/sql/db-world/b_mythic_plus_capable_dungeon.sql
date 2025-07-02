@@ -3,7 +3,7 @@ CREATE TABLE `mythic_plus_capable_dungeon`(
 	`map` smallint unsigned NOT NULL,
 	`mapdifficulty` smallint unsigned NOT NULL,
 	`final_boss_entry` int unsigned NOT NULL,
-	PRIMARY KEY (`map`, `mapdifficulty`)
+	PRIMARY KEY (`map`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `mythic_plus_capable_dungeon` (`map`, `mapdifficulty`, `final_boss_entry`) VALUES (658, 0, 36658);
