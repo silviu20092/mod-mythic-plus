@@ -43,6 +43,15 @@ To add affixes to a M+ level, insert lines in **mythic_plus_affix**. For **affix
 
 You can set a random affix count for specific levels (**mythic_plus_level.random_affix_count**). Put 0 if you don't want any random affix. Each time the server is restarted, the mythic level will receive **random_affix_count** random affixes from a predefined pool of random affixes.
 
+### Mythic Plus spell damage scaling
+
+You can further scale spell damage in M+ dungeons using **mythic_plus_spell_override** table. **map** is the ID of the map where the spell will be scaled. **spellid** is the ID of the spell that will receive the scaling. **modpct** is the scale factor for the initial effect of the spell (some spells like Immolate deal initial damage and then DOT damage, the spell id is the same). **dotmodpct** is the scale factor for the DOT damage of the spell.
+
+### Commands
+
+Use **.mythic info** to find information about the current Mythic Plus dungeon. This command is available to all players.
+Use **.mythic reload** to reload tables related to Mythic Plus system, not all tables are hot reloadable though.
+
 ## Some photos
 
 ![pic1](https://github.com/silviu20092/mod-mythic-plus/blob/master/pics/pic1.png?raw=true)

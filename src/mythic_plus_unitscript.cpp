@@ -197,17 +197,29 @@ public:
 class mythic_plus_damage_affix_unitscript : public UnitScript
 {
 private:
-    void HandleScaleDamage(Unit* attacker, uint32& damage)
+    void HandleScaleDamage(Unit* attacker, uint32& damage, SpellInfo const* spellInfo, bool dotDmg)
     {
         if (attacker && attacker->ToCreature())
         {
             MythicPlus::CreatureData* creatureData = sMythicPlus->GetCreatureData(attacker->ToCreature(), false);
             if (creatureData != nullptr)
                 damage *= creatureData->extraDamageMultiplier;
+
+            // spell damage override is added on top of the global multiplier
+            if (spellInfo != nullptr)
+            {
+                const MythicPlus::SpellOverride* spellOverride = sMythicPlus->GetSpellOverride(attacker->GetMap(), spellInfo->Id);
+                if (spellOverride != nullptr)
+                {
+                    float pct = dotDmg ? spellOverride->dotModPct : spellOverride->modPct;
+                    if (pct >= 0.0f) // lets allow 0 aswell, will make the spell effect deal no damage
+                        damage *= pct;
+                }
+            }
         }
     }
 
-    void HandleDamageEffect(Unit* attacker, Unit* victim, uint32& damage)
+    void HandleDamageEffect(Unit* attacker, Unit* victim, uint32& damage, SpellInfo const* spellInfo = nullptr, bool dotDmg = false)
     {
         if (attacker && victim && attacker->GetMap() == victim->GetMap())
         {
@@ -218,7 +230,7 @@ private:
             MythicPlus::MapData* mapData = sMythicPlus->GetMapData(map, false);
             ASSERT(mapData);
 
-            HandleScaleDamage(attacker, damage);
+            HandleScaleDamage(attacker, damage, spellInfo, dotDmg);
 
             for (auto* affix : mapData->mythicLevel->affixes)
                 affix->HandleOnDamageEffect(attacker, victim, damage);
@@ -246,7 +258,7 @@ public:
             return;
 
         uint32 adjustedDamage = (uint32)damage;
-        HandleDamageEffect(attacker, target, adjustedDamage);
+        HandleDamageEffect(attacker, target, adjustedDamage, spellInfo, false);
         damage = (int32)adjustedDamage;
     }
 
@@ -260,7 +272,7 @@ public:
         if (spellInfo->Id == EntanglingRootsAffix::ENTANGLING_ROOTS_SPELL_ID)
             return;
 
-        HandleDamageEffect(attacker, target, damage);
+        HandleDamageEffect(attacker, target, damage, spellInfo, true);
     }
 };
 

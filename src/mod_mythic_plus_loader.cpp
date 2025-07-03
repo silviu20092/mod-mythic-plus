@@ -11,6 +11,7 @@ void AddSC_mod_mythic_plus_npc();
 void AddSC_mythic_plus_groupscript();
 void AddSC_npc_lightning_sphere();
 void AddSC_mythic_plus_keystone();
+void AddSC_mythic_plus_commandscript();
 
 void Addmod_mythic_plusScripts()
 {
@@ -23,4 +24,5 @@ void Addmod_mythic_plusScripts()
     AddSC_mythic_plus_groupscript();
     AddSC_npc_lightning_sphere();
     AddSC_mythic_plus_keystone();
+    AddSC_mythic_plus_commandscript();
 }

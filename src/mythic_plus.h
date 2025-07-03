@@ -179,6 +179,14 @@ public:
         Difficulty minDifficulty;
         uint32 finalBossEntry;
     };
+
+    struct SpellOverride
+    {
+        uint32 map;
+        uint32 spellId;
+        float modPct;       // affects initial spell damage
+        float dotModPct;    // affects only dot damage for the specific spell
+    };
 public:
     static MythicPlus* instance();
 
@@ -265,6 +273,10 @@ public:
     void ScaleCreature(Creature* creature);
     const MapScale* GetMapScale(const Map* map) const;
     bool CheckGroupLevelForKeystone(const Player* player) const;
+    const SpellOverride* GetSpellOverride(const Map* map, uint32 spellid) const;
+    void LoadIgnoredEntriesForMultiplyAffixFromDB();
+    void LoadScaleMapFromDB();
+    void LoadSpellOverridesFromDB();
 private:
     std::unordered_map<uint32, MythicPlusCapableDungeon> mythicPlusDungeons;
     std::unordered_map<uint32, MythicPlusDungeonInfo> mythicPlusDungeonInfo;
@@ -286,14 +298,13 @@ private:
     std::unordered_map<uint32, std::vector<DBReward>> rewardsFromDB;
     std::unordered_map<uint32, uint64> charKeystoneBuyTimers;
     std::unordered_map<uint32, std::unordered_map<uint16, MapScale>> scaleMap;
+    std::unordered_map<uint32, std::unordered_map<uint32, SpellOverride>> spellOverrides;
 
     bool IsAllowedMythicPlusDungeon(uint32 mapId) const;
     ObjectGuid GetLeaderGuid(const Player* player) const;
     void LoadMythicPlusDungeonsFromDB();
     void LoadMythicPlusCharLevelsFromDB();
     void LoadMythicPlusKeystoneTimersFromDB();
-    void LoadIgnoredEntriesForMultiplyAffixFromDB();
-    void LoadScaleMapFromDB();
     void MythicPlusSnapshotsDBCallback(QueryResult result);
     void SortSnapshots(std::vector<std::pair<std::pair<uint32, uint64>, std::vector<MythicPlusDungeonSnapshot>>>& snapshots);
     void LoadMythicPlusCapableDungeonsFromDB();

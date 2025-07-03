@@ -217,6 +217,7 @@ void MythicPlus::LoadFromDB()
     LoadMythicAffixFromDB();
     LoadMythicRewardsFromDB();
     LoadMythicLevelsFromDB();
+    LoadSpellOverridesFromDB();
 }
 
 MythicPlus::MythicPlusDungeonInfo* MythicPlus::GetSavedDungeonInfo(uint32 instanceId)
@@ -552,6 +553,33 @@ void MythicPlus::LoadMythicLevelsFromDB()
         }
 
         mythicLevels.push_back(level);
+    } while (result->NextRow());
+}
+
+void MythicPlus::LoadSpellOverridesFromDB()
+{
+    spellOverrides.clear();
+
+    QueryResult result = WorldDatabase.Query("SELECT spellid, map, modpct, dotmodpct FROM mythic_plus_spell_override");
+    if (!result)
+        return;
+
+    do
+    {
+        Field* fields = result->Fetch();
+
+        uint32 spellId = fields[0].Get<uint32>();
+        uint32 mapId = fields[1].Get<uint32>();
+        float modPct = fields[2].Get<float>();
+        float dotModPct = fields[3].Get<float>();
+
+        SpellOverride spellOverride;
+        spellOverride.spellId = spellId;
+        spellOverride.map = mapId;
+        spellOverride.modPct = modPct;
+        spellOverride.dotModPct = dotModPct;
+
+        spellOverrides[mapId][spellId] = spellOverride;
     } while (result->NextRow());
 }
 
@@ -1134,4 +1162,13 @@ bool MythicPlus::CheckGroupLevelForKeystone(const Player* player) const
     }
 
     return true;
+}
+
+const MythicPlus::SpellOverride* MythicPlus::GetSpellOverride(const Map* map, uint32 spellid) const
+{
+    if (spellOverrides.find(map->GetId()) != spellOverrides.end())
+        if (spellOverrides.at(map->GetId()).find(spellid) != spellOverrides.at(map->GetId()).end())
+            return &spellOverrides.at(map->GetId()).at(spellid);
+
+    return nullptr;
 }
