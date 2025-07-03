@@ -47,6 +47,7 @@ public:
                 {
                     uint32 damage = (uint32)(frand(1.5f, 5.25f) / 100 * p->GetMaxHealth());
                     Unit::DealDamage(me, p, damage, nullptr, SPELL_DIRECT_DAMAGE, SPELL_SCHOOL_MASK_SPELL, nullptr, false, true);
+                    me->SendAttackStateUpdate(HITINFO_NO_ANIMATION, p, 1, SPELL_SCHOOL_MASK_SPELL, damage, 0, 0, VICTIMSTATE_HIT, 0);
                 }
             }
             else

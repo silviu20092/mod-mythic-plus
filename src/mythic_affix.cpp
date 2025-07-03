@@ -208,7 +208,8 @@ void RandomlyExplodeAffix::HandlePeriodicEffect(Unit* unit, uint32 diff)
         {
             player->CastSpell(player, EXPLOSION_VISUAL, true);
             uint32 damage = (uint32)(frand(15, 35) / 100 * player->GetMaxHealth());
-            Unit::DealDamage(player, player, damage, nullptr, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, nullptr, false, true);
+            Unit::DealDamage(player, player, damage, nullptr, SPELL_DIRECT_DAMAGE, SPELL_SCHOOL_MASK_FIRE, nullptr, false, true);
+            player->SendAttackStateUpdate(HITINFO_NO_ANIMATION, player, 1, SPELL_SCHOOL_MASK_FIRE, damage, 0, 0, VICTIMSTATE_HIT, 0);
         }
     }
 }
