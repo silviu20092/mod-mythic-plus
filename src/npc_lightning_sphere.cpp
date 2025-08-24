@@ -40,7 +40,7 @@ public:
                 std::list<Player*> playerList;
                 Acore::AnyPlayerInObjectRangeCheck checker(me, range);
                 Acore::PlayerListSearcher<Acore::AnyPlayerInObjectRangeCheck> searcher(me, playerList, checker);
-                Cell::VisitWorldObjects(me, searcher, range);
+                Cell::VisitObjects(me, searcher, range);
 
                 me->CastSpell(me, LIGHTNING_VISUAL, true);
                 for (auto* p : playerList)

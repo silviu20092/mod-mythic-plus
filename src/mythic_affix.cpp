@@ -342,7 +342,7 @@ void EntanglingRootsAffix::HandlePeriodicEffect(Unit* unit, uint32 diff)
                 std::list<Unit*> targets;
                 Acore::AnyUnfriendlyUnitInObjectRangeCheck u_check(player, player, srange);
                 Acore::UnitListSearcher<Acore::AnyUnfriendlyUnitInObjectRangeCheck> searcher(player, targets, u_check);
-                Cell::VisitAllObjects(player, searcher, srange);
+                Cell::VisitObjects(player, searcher, srange);
 
                 if (!targets.empty())
                 {
