@@ -28,10 +28,10 @@ public:
     virtual MythicAffixType GetAffixType() const = 0;
     virtual std::string ToString() const = 0;
 
-    virtual void HandleStaticEffect(Creature* creature) {}
-    virtual void HandleOnDamageEffect(Unit* attacker, Unit* victim, uint32& damage) {}
-    virtual void HandlePeriodicEffect(Unit* unit, uint32 diff) {}
-    virtual void HandlePeriodicEffectMap(Map* map, uint32 diff) {}
+    virtual void HandleStaticEffect(Creature* /*creature*/) {}
+    virtual void HandleOnDamageEffect(Unit* /*attacker*/, Unit* /*victim*/ , uint32& /*damage*/) {}
+    virtual void HandlePeriodicEffect(Unit* /*unit*/, uint32 /*diff*/) {}
+    virtual void HandlePeriodicEffectMap(Map* /*map*/, uint32 /*diff*/) {}
 
     virtual bool IsRandom() const
     {
