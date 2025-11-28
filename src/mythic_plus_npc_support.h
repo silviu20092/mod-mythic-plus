@@ -9,15 +9,15 @@ class Player;
 class MythicPlusNpcSupport : public GossipSupport
 {
 public:
-    void AddMythicPlusLevels(Player* player, Creature* creature);
-    void AddMythicPlusLevelInfo(Player* player, Creature* creature, uint32 mythicLevel);
-    void AddMythicPlusDungeonList(Player* player, Creature* creature);
-    void AddMythicPlusDungeonListForSnapshots(Player* player, Creature* creature, uint32 snapMythicLevel);
-    void AddMythicPlusSnapshotAllRuns(Player* player, Creature* creature, uint32 mapEntry);
-    void AddMythicPlusAllLevels(Player* player, Creature* creature);
-    void AddMythicPlusDungeonSnapshotDetails(Player* player, Creature* creature, uint32 internalId);
-    void AddRandomAfixes(Player* player, Creature* creature);
-    void AddRandomAffixesForLevel(Player* player, Creature* creature, uint32 level);
+    void AddMythicPlusLevels(Player* player);
+    void AddMythicPlusLevelInfo(Player* player, uint32 mythicLevel);
+    void AddMythicPlusDungeonList(Player* player);
+    void AddMythicPlusDungeonListForSnapshots(Player* player, uint32 snapMythicLevel);
+    void AddMythicPlusSnapshotAllRuns(Player* player, uint32 mapEntry);
+    void AddMythicPlusAllLevels(Player* player);
+    void AddMythicPlusDungeonSnapshotDetails(Player* player, uint32 internalId);
+    void AddRandomAfixes(Player* player);
+    void AddRandomAffixesForLevel(Player* player, uint32 level);
     bool TakePagedDataAction(Player* player, Creature* creature, uint32 action) override;
     bool OnGossipSelect(Player* player, Creature* creature, uint32 sender, uint32 action) override;
 private:

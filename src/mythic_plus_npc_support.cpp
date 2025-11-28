@@ -124,7 +124,7 @@ void MythicPlusNpcSupport::AddMainMenu(Player* player, Creature* creature)
     pagedData.SortAndCalculateTotals(CompareIdentifierById);
 }
 
-void MythicPlusNpcSupport::AddMythicPlusLevels(Player* player, Creature* creature)
+void MythicPlusNpcSupport::AddMythicPlusLevels(Player* player)
 {
     PagedData& pagedData = GetPagedData(player);
     pagedData.Reset();
@@ -149,7 +149,7 @@ void MythicPlusNpcSupport::AddMythicPlusLevels(Player* player, Creature* creatur
     pagedData.SortAndCalculateTotals(CompareIdentifierById);
 }
 
-void MythicPlusNpcSupport::AddMythicPlusLevelInfo(Player* player, Creature* creature, uint32 mythicLevel)
+void MythicPlusNpcSupport::AddMythicPlusLevelInfo(Player* player, uint32 mythicLevel)
 {
     PagedData& pagedData = GetPagedData(player);
     pagedData.Reset();
@@ -222,7 +222,7 @@ void MythicPlusNpcSupport::AddMythicPlusLevelInfo(Player* player, Creature* crea
     pagedData.SortAndCalculateTotals(CompareIdentifierById);
 }
 
-void MythicPlusNpcSupport::AddMythicPlusDungeonList(Player* player, Creature* creature)
+void MythicPlusNpcSupport::AddMythicPlusDungeonList(Player* player)
 {
     PagedData& pagedData = GetPagedData(player);
     pagedData.Reset();
@@ -260,7 +260,7 @@ void MythicPlusNpcSupport::AddMythicPlusDungeonList(Player* player, Creature* cr
     pagedData.SortAndCalculateTotals(CompareIdentifierById);
 }
 
-void MythicPlusNpcSupport::AddMythicPlusDungeonListForSnapshots(Player* player, Creature* creature, uint32 snapMythicLevel)
+void MythicPlusNpcSupport::AddMythicPlusDungeonListForSnapshots(Player* player, uint32 snapMythicLevel)
 {
     PagedData& pagedData = GetPagedData(player);
     pagedData.Reset();
@@ -307,7 +307,7 @@ void MythicPlusNpcSupport::AddMythicPlusDungeonListForSnapshots(Player* player, 
     pagedData.SortAndCalculateTotals(CompareIdentifierById);
 }
 
-void MythicPlusNpcSupport::AddMythicPlusSnapshotAllRuns(Player* player, Creature* creature, uint32 mapEntry)
+void MythicPlusNpcSupport::AddMythicPlusSnapshotAllRuns(Player* player, uint32 mapEntry)
 {
     PagedData& pagedData = GetPagedData(player);
     pagedData.Reset();
@@ -375,7 +375,7 @@ void MythicPlusNpcSupport::AddMythicPlusSnapshotAllRuns(Player* player, Creature
     pagedData.SortAndCalculateTotals(CompareIdentifierById);
 }
 
-void MythicPlusNpcSupport::AddMythicPlusAllLevels(Player* player, Creature* creature)
+void MythicPlusNpcSupport::AddMythicPlusAllLevels(Player* player)
 {
     PagedData& pagedData = GetPagedData(player);
     pagedData.Reset();
@@ -401,7 +401,7 @@ void MythicPlusNpcSupport::AddMythicPlusAllLevels(Player* player, Creature* crea
     pagedData.SortAndCalculateTotals(CompareIdentifierById);
 }
 
-void MythicPlusNpcSupport::AddMythicPlusDungeonSnapshotDetails(Player* player, Creature* creature, uint32 internalId)
+void MythicPlusNpcSupport::AddMythicPlusDungeonSnapshotDetails(Player* player, uint32 internalId)
 {
     PagedData& pagedData = GetPagedData(player);
     pagedData.Reset();
@@ -530,7 +530,7 @@ void MythicPlusNpcSupport::AddMythicPlusDungeonSnapshotDetails(Player* player, C
     pagedData.SortAndCalculateTotals(CompareIdentifierById);
 }
 
-void MythicPlusNpcSupport::AddRandomAfixes(Player* player, Creature* creature)
+void MythicPlusNpcSupport::AddRandomAfixes(Player* player)
 {
     PagedData& pagedData = GetPagedData(player);
     pagedData.Reset();
@@ -586,7 +586,7 @@ void MythicPlusNpcSupport::AddRandomAfixes(Player* player, Creature* creature)
     pagedData.SortAndCalculateTotals(CompareIdentifierById);
 }
 
-void MythicPlusNpcSupport::AddRandomAffixesForLevel(Player* player, Creature* creature, uint32 level)
+void MythicPlusNpcSupport::AddRandomAffixesForLevel(Player* player, uint32 level)
 {
     PagedData& pagedData = GetPagedData(player);
     pagedData.Reset();
@@ -628,7 +628,7 @@ bool MythicPlusNpcSupport::TakePagedDataAction(Player* player, Creature* creatur
     {
         if (action == 1)
         {
-            AddMythicPlusLevels(player, creature);
+            AddMythicPlusLevels(player);
             return AddPagedData(player, creature, 0);
         }
         else if (action == 2)
@@ -648,12 +648,12 @@ bool MythicPlusNpcSupport::TakePagedDataAction(Player* player, Creature* creatur
             return OnGossipHello(player, creature);
         else if (action == 5)
         {
-            AddMythicPlusDungeonList(player, creature);
+            AddMythicPlusDungeonList(player);
             return AddPagedData(player, creature, 0);
         }
         else if (action == 7)
         {
-            AddMythicPlusAllLevels(player, creature);
+            AddMythicPlusAllLevels(player);
             return AddPagedData(player, creature, 0);
         }
         else if (action == 8)
@@ -668,7 +668,7 @@ bool MythicPlusNpcSupport::TakePagedDataAction(Player* player, Creature* creatur
         }
         else if (action == 9)
         {
-            AddRandomAfixes(player, creature);
+            AddRandomAfixes(player);
             return AddPagedData(player, creature, 0);
         }
         else if (action == 10)
@@ -679,7 +679,7 @@ bool MythicPlusNpcSupport::TakePagedDataAction(Player* player, Creature* creatur
     }
     else if (pagedData.type == GossipSupport::PAGED_DATA_TYPE_MYTHIC_LEVELS)
     {
-        AddMythicPlusLevelInfo(player, creature, action);
+        AddMythicPlusLevelInfo(player, action);
         return AddPagedData(player, creature, 0);
     }
     else if (pagedData.type == GossipSupport::PAGED_DATA_TYPE_MYTHIC_LEVEL_INFO)
@@ -700,46 +700,46 @@ bool MythicPlusNpcSupport::TakePagedDataAction(Player* player, Creature* creatur
         }
         else
         {
-            AddMythicPlusLevelInfo(player, creature, chosenMythicLevel);
+            AddMythicPlusLevelInfo(player, chosenMythicLevel);
             return AddPagedData(player, creature, pagedData.currentPage);
         }
     }
     else if (pagedData.type == GossipSupport::PAGED_DATA_TYPE_MYTHIC_DUNGEON_LIST)
     {
-        AddMythicPlusDungeonList(player, creature);
+        AddMythicPlusDungeonList(player);
         return AddPagedData(player, creature, pagedData.currentPage);
     }
     else if (pagedData.type == GossipSupport::PAGED_DATA_TYPE_MYTHIC_DUNGEON_LIST_SNAPSHOT)
     {
         if (action == 1)
         {
-            AddMythicPlusDungeonListForSnapshots(player, creature, pagedData.GetCustomInfo<MythicPlusNpcPageInfo>()->snapMythicLevel);
+            AddMythicPlusDungeonListForSnapshots(player, pagedData.GetCustomInfo<MythicPlusNpcPageInfo>()->snapMythicLevel);
             return AddPagedData(player, creature, pagedData.currentPage);
         }
-        AddMythicPlusSnapshotAllRuns(player, creature, action);
+        AddMythicPlusSnapshotAllRuns(player, action);
         return AddPagedData(player, creature, 0);
     }
     else if (pagedData.type == GossipSupport::PAGED_DATA_TYPE_MYTHIC_ALL_LEVELS)
     {
-        AddMythicPlusDungeonListForSnapshots(player, creature, action);
+        AddMythicPlusDungeonListForSnapshots(player, action);
         return AddPagedData(player, creature, 0);
     }
     else if (pagedData.type == GossipSupport::PAGED_DATA_TYPE_MYTHIC_DUNGEON_LIST_SNAPSHOT_RUNS)
     {
         if (action == 1)
         {
-            AddMythicPlusSnapshotAllRuns(player, creature, pagedData.GetCustomInfo<MythicPlusNpcPageInfo>()->mapEntry);
+            AddMythicPlusSnapshotAllRuns(player, pagedData.GetCustomInfo<MythicPlusNpcPageInfo>()->mapEntry);
             return AddPagedData(player, creature, pagedData.currentPage);
         }
         else
         {
-            AddMythicPlusDungeonSnapshotDetails(player, creature, action - 10);
+            AddMythicPlusDungeonSnapshotDetails(player, action - 10);
             return AddPagedData(player, creature, 0);
         }
     }
     else if (pagedData.type == GossipSupport::PAGED_DATA_TYPE_MYTHIC_DUNGEON_SNAPSHOT_DETAILS)
     {
-        AddMythicPlusDungeonSnapshotDetails(player, creature, pagedData.GetCustomInfo<MythicPlusNpcPageInfo>()->internalId);
+        AddMythicPlusDungeonSnapshotDetails(player, pagedData.GetCustomInfo<MythicPlusNpcPageInfo>()->internalId);
         return AddPagedData(player, creature, pagedData.currentPage);
     }
     else if (pagedData.type == GossipSupport::PAGED_DATA_TYPE_RANDOM_AFFIXES)
@@ -747,18 +747,18 @@ bool MythicPlusNpcSupport::TakePagedDataAction(Player* player, Creature* creatur
         if (action >= 100 && action <= 1000)
         {
             uint32 level = action - 100;
-            AddRandomAffixesForLevel(player, creature, level);
+            AddRandomAffixesForLevel(player, level);
             return AddPagedData(player, creature, 0);
         }
         else
         {
-            AddRandomAfixes(player, creature);
+            AddRandomAfixes(player);
             return AddPagedData(player, creature, pagedData.currentPage);
         }
     }
     else if (pagedData.type == GossipSupport::PAGED_DATA_TYPE_RANDOM_AFFIXES_FOR_LEVEL)
     {
-        AddRandomAffixesForLevel(player, creature, pagedData.GetCustomInfo<MythicPlusNpcPageInfo>()->randomMythicLevel);
+        AddRandomAffixesForLevel(player, pagedData.GetCustomInfo<MythicPlusNpcPageInfo>()->randomMythicLevel);
         return AddPagedData(player, creature, pagedData.currentPage);
     }
 
@@ -798,27 +798,27 @@ bool MythicPlusNpcSupport::OnGossipSelect(Player* player, Creature* creature, ui
         return GossipSupport::OnGossipSelect(player, creature, sender, action);
     else if (sender == GOSSIP_SENDER_MAIN + 9)
     {
-        AddMythicPlusLevels(player, creature);
+        AddMythicPlusLevels(player);
         return AddPagedData(player, creature, 0);
     }
     else if (sender == GOSSIP_SENDER_MAIN + 10)
     {
-        AddMythicPlusAllLevels(player, creature);
+        AddMythicPlusAllLevels(player);
         return AddPagedData(player, creature, 0);
     }
     else if (sender == GOSSIP_SENDER_MAIN + 11)
     {
-        AddMythicPlusDungeonListForSnapshots(player, creature, pagedData.GetCustomInfo<MythicPlusNpcPageInfo>()->snapMythicLevel);
+        AddMythicPlusDungeonListForSnapshots(player, pagedData.GetCustomInfo<MythicPlusNpcPageInfo>()->snapMythicLevel);
         return AddPagedData(player, creature, 0);
     }
     else if (sender == GOSSIP_SENDER_MAIN + 12)
     {
-        AddMythicPlusSnapshotAllRuns(player, creature, pagedData.GetCustomInfo<MythicPlusNpcPageInfo>()->mapEntry);
+        AddMythicPlusSnapshotAllRuns(player, pagedData.GetCustomInfo<MythicPlusNpcPageInfo>()->mapEntry);
         return AddPagedData(player, creature, 0);
     }
     else if (sender == GOSSIP_SENDER_MAIN + 13)
     {
-        AddRandomAfixes(player, creature);
+        AddRandomAfixes(player);
         return AddPagedData(player, creature, 0);
     }
 

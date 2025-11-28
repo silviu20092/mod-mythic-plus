@@ -1092,7 +1092,7 @@ void MythicPlus::ScaleCreature(Creature* creature)
     creature->SetMaxHealth(health);
     creature->SetHealth(health);
     creature->ResetPlayerDamageReq();
-    creature->SetModifierValue(UNIT_MOD_HEALTH, BASE_VALUE, (float)health);
+    creature->SetStatFlatModifier(UNIT_MOD_HEALTH, BASE_VALUE, (float)health);
 
     // scale mana
     float manaMod = std::max(1.0f, cInfo->ModMana);
@@ -1101,11 +1101,11 @@ void MythicPlus::ScaleCreature(Creature* creature)
     creature->SetCreateMana(mana);
     creature->SetMaxPower(POWER_MANA, mana);
     creature->SetPower(POWER_MANA, mana);
-    creature->SetModifierValue(UNIT_MOD_MANA, BASE_VALUE, (float)mana);
+    creature->SetStatFlatModifier(UNIT_MOD_MANA, BASE_VALUE, (float)mana);
 
     // scale armor
     float armor = std::ceil(stats->BaseArmor * cInfo->ModArmor);
-    creature->SetModifierValue(UNIT_MOD_ARMOR, BASE_VALUE, armor);
+    creature->SetStatFlatModifier(UNIT_MOD_ARMOR, BASE_VALUE, armor);
 
     // scale base damage
     float basedamage = stats->BaseDamage[exp];
@@ -1122,8 +1122,8 @@ void MythicPlus::ScaleCreature(Creature* creature)
     creature->SetBaseWeaponDamage(RANGED_ATTACK, MINDAMAGE, weaponBaseMinDamage);
     creature->SetBaseWeaponDamage(RANGED_ATTACK, MAXDAMAGE, weaponBaseMaxDamage);
 
-    creature->SetModifierValue(UNIT_MOD_ATTACK_POWER, BASE_VALUE, stats->AttackPower);
-    creature->SetModifierValue(UNIT_MOD_ATTACK_POWER_RANGED, BASE_VALUE, stats->RangedAttackPower);
+    creature->SetStatFlatModifier(UNIT_MOD_ATTACK_POWER, BASE_VALUE, stats->AttackPower);
+    creature->SetStatFlatModifier(UNIT_MOD_ATTACK_POWER_RANGED, BASE_VALUE, stats->RangedAttackPower);
 
     creature->SetCanModifyStats(true);
     creature->UpdateAllStats();

@@ -25,6 +25,8 @@ enum MythicAffixType
 class MythicAffix
 {
 public:
+    virtual ~MythicAffix() = default;
+
     virtual MythicAffixType GetAffixType() const = 0;
     virtual std::string ToString() const = 0;
 

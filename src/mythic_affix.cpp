@@ -93,7 +93,7 @@ void HealthIncreaseAffix::HandleStaticEffect(Creature* creature)
     uint32 newMaxHealth = creatureData->originalMaxHealth + (uint32)(healthMod * creatureData->originalMaxHealth);
     creature->SetCreateHealth(newMaxHealth);
     creature->SetMaxHealth(newMaxHealth);
-    creature->SetModifierValue(UNIT_MOD_HEALTH, BASE_VALUE, (float)newMaxHealth);
+    creature->SetStatFlatModifier(UNIT_MOD_HEALTH, BASE_VALUE, (float)newMaxHealth);
     creature->SetHealth(newMaxHealth * (creature->GetHealthPct() / 100));
     creature->ResetPlayerDamageReq();
 }
