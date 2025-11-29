@@ -86,13 +86,13 @@ bool GossipSupport::AddPagedData(Player* player, Creature* creature, uint32 page
     return true;
 }
 
-bool GossipSupport::TakePagedDataAction(Player* player, Creature* creature, uint32 action)
+bool GossipSupport::TakePagedDataAction(Player* player, Creature* /*creature*/, uint32 /*action*/)
 {
     CloseGossipMenuFor(player);
     return false;
 }
 
-void GossipSupport::NoPagedData(Player* player, const PagedData& pagedData) const
+void GossipSupport::NoPagedData(Player* player, const PagedData& /*pagedData*/) const
 {
     AddGossipItemFor(player, GOSSIP_ICON_CHAT, "|cffb50505NOTHING ON THIS PAGE|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF);
     AddGossipItemFor(player, GOSSIP_ICON_CHAT, "<- [First Page]", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF);
@@ -135,7 +135,7 @@ void GossipSupport::_AddMainPageInfo(Player* player, uint32 lowIndex, uint32 hig
     }
 }
 
-uint32 GossipSupport::_PageZeroSender(const PagedData& pagedData) const
+uint32 GossipSupport::_PageZeroSender(const PagedData& /*pagedData*/) const
 {
     return GOSSIP_SENDER_MAIN;
 }

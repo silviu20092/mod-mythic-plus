@@ -40,6 +40,8 @@ public:
 
         Identifier() : id(0), optionIcon(GOSSIP_ICON_INTERACT_1) {}
 
+        virtual ~Identifier() = default;
+
         virtual IdentifierType GetType() const
         {
             return BASE_IDENTIFIER;
@@ -79,7 +81,7 @@ public:
     typedef std::unordered_map<uint32, PagedData> PagedDataMap;
 public:
     GossipSupport();
-    ~GossipSupport();
+    virtual ~GossipSupport();
 
     PagedData& GetPagedData(const Player* player);
     virtual bool AddPagedData(Player* player, Creature* creature, uint32 page);
